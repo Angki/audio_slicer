@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; media-src 'self' file: blob:; img-src 'self' https: data:; connect-src 'self' https://api.discogs.com">
+  <title>AutoSlice</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- ── Top Bar ── -->
+    <header id="toolbar">
+      <div class="toolbar-left">
+        <div class="app-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="6" width="3" height="12" rx="1.5" fill="#7c5cfc"/>
+            <rect x="7" y="3" width="3" height="18" rx="1.5" fill="#a78bfa"/>
+            <rect x="12" y="8" width="3" height="8" rx="1.5" fill="#7c5cfc"/>
+            <rect x="17" y="4" width="3" height="16" rx="1.5" fill="#a78bfa"/>
+          </svg>
+          <span class="app-title">AutoSlice</span>
+        </div>
+      </div>
+      <div class="toolbar-center">
+        <span id="fileNameDisplay" class="file-name">No file loaded</span>
+        <span id="fileInfoDisplay" class="file-info"></span>
+      </div>
+      <div class="toolbar-right">
+        <button id="btnOpenFile" class="btn btn-ghost" title="Open file">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          Open
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Drop Zone (shown when no file) ── -->
+    <div id="dropZone" class="drop-zone">
+      <div class="drop-zone-content">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <h2>Drop audio file here</h2>
+        <p>WAV, FLAC, AIFF, MP3</p>
+        <span class="drop-zone-hint">or click Open above</span>
+      </div>
+    </div>
+
+    <!-- ── Main Content (hidden until file loaded) ── -->
+    <main id="mainContent" class="main-content hidden">
+      <!-- Waveform Panel -->
+      <section id="waveformPanel" class="panel waveform-panel">
+        <div class="panel-header">
+          <div class="panel-title">Waveform</div>
+          <div class="waveform-controls">
+            <button id="btnZoomOut" class="btn btn-icon" title="Zoom Out">−</button>
+            <input id="zoomSlider" type="range" min="1" max="500" value="1" class="zoom-slider">
+            <button id="btnZoomIn" class="btn btn-icon" title="Zoom In">+</button>
+            <div class="separator"></div>
+            <button id="btnToggleSpectrogram" class="btn btn-sm" title="Toggle Spectrogram">Spectrogram</button>
+          </div>
+        </div>
+        <div id="waveformContainer" class="waveform-container"></div>
+        <div id="spectrogramContainer" class="spectrogram-container hidden"></div>
+        <div id="timelineInfo" class="timeline-info">
+          <span id="currentTime">0:00</span>
+          <span id="totalTime">0:00</span>
+        </div>
+      </section>
+
+      <!-- Controls Panel -->
+      <section class="controls-row">
+        <!-- Playback Controls -->
+        <div class="panel control-group playback-controls">
+          <button id="btnPlayPause" class="btn btn-primary btn-play" title="Play / Pause">
+            <svg id="iconPlay" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+            <svg id="iconPause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <button id="btnStop" class="btn btn-ghost" title="Stop">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          </button>
+        </div>
+
+        <!-- Detection Controls -->
+        <div class="panel control-group detection-controls">
+          <h3>Detection</h3>
+          <div class="param-grid">
+            <label>Threshold
+              <div class="param-input">
+                <input id="paramThreshold" type="range" min="-80" max="-10" value="-40" step="1">
+                <span id="paramThresholdVal">-40 dB</span>
+              </div>
+            </label>
+            <label>Min Silence
+              <div class="param-input">
+                <input id="paramMinSilence" type="range" min="200" max="10000" value="1500" step="100">
+                <span id="paramMinSilenceVal">1500 ms</span>
+              </div>
+            </label>
+            <label>Sensitivity
+              <div class="param-input">
+                <input id="paramSensitivity" type="range" min="0" max="100" value="50" step="5">
+                <span id="paramSensitivityVal">50%</span>
+              </div>
+            </label>
+          </div>
+          <div class="detection-actions">
+            <label class="checkbox-label">
+              <input id="paramAutoThreshold" type="checkbox" checked>
+              Auto threshold
+            </label>
+            <button id="btnAutoDetect" class="btn btn-accent">⚡ Auto Detect</button>
+          </div>
+        </div>
+
+        <!-- Marker Controls -->
+        <div class="panel control-group marker-controls">
+          <h3>Markers</h3>
+          <div class="marker-actions">
+            <button id="btnAddMarker" class="btn btn-sm">+ Add at cursor</button>
+            <button id="btnClearMarkers" class="btn btn-sm btn-danger">Clear all</button>
+          </div>
+          <div id="markerCount" class="marker-count">0 markers · 1 track</div>
+        </div>
+      </section>
+
+      <!-- Tracks & Discogs Panel -->
+      <section class="bottom-panels">
+        <!-- Track List -->
+        <div class="panel track-list-panel">
+          <div class="panel-header">
+            <div class="panel-title">Tracks</div>
+            <div id="trackCountBadge" class="badge">0</div>
+          </div>
+          <div id="trackList" class="track-list">
+            <div class="empty-state">Run Auto Detect to find tracks</div>
+          </div>
+        </div>
+
+        <!-- Discogs Panel -->
+        <div class="panel discogs-panel">
+          <div class="panel-header">
+            <div class="panel-title">Discogs</div>
+            <button id="btnDiscogsToggle" class="btn btn-sm btn-ghost">Search</button>
+          </div>
+          <div id="discogsContent" class="discogs-content">
+            <div class="discogs-search">
+              <input id="discogsArtist" type="text" placeholder="Artist" class="input">
+              <input id="discogsAlbum" type="text" placeholder="Album" class="input">
+              <input id="discogsToken" type="text" placeholder="Discogs Token (optional)" class="input input-sm">
+              <button id="btnDiscogsSearch" class="btn btn-sm btn-accent">Search</button>
+            </div>
+            <div id="discogsResults" class="discogs-results"></div>
+            <div id="discogsTracklist" class="discogs-tracklist hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Export Bar -->
+      <footer id="exportBar" class="export-bar">
+        <div class="export-options">
+          <label>Format
+            <select id="exportFormat" class="select">
+              <option value="flac">FLAC</option>
+              <option value="wav">WAV</option>
+              <option value="mp3">MP3 320kbps</option>
+            </select>
+          </label>
+          <label>Artist
+            <input id="exportArtist" type="text" placeholder="Artist" class="input">
+          </label>
+          <label>Album
+            <input id="exportAlbum" type="text" placeholder="Album" class="input">
+          </label>
+          <label>Year
+            <input id="exportYear" type="text" placeholder="Year" class="input input-sm">
+          </label>
+        </div>
+        <button id="btnExport" class="btn btn-primary btn-export">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Tracks
+        </button>
+      </footer>
+    </main>
+
+    <!-- Status / Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+      <div class="loading-spinner"></div>
+      <div id="loadingText" class="loading-text">Processing...</div>
+    </div>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

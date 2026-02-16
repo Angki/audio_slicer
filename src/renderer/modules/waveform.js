@@ -165,6 +165,33 @@ export function initWaveform() {
         window.addMarker(time);
         syncMarkersToRegions();
     });
+
+    // ── Global Keyboard Shortcuts ──
+    document.addEventListener('keydown', (e) => {
+        // Ignore if user is typing in an input field
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        switch (e.code) {
+            case 'Space':
+                e.preventDefault();
+                wavesurfer.playPause();
+                break;
+            case 'KeyM':
+                e.preventDefault();
+                const time = wavesurfer.getCurrentTime();
+                window.addMarker(time);
+                syncMarkersToRegions();
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                wavesurfer.skip(-5);
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                wavesurfer.skip(5);
+                break;
+        }
+    });
 }
 
 // ── Load Audio ─────────────────────────────────────────────

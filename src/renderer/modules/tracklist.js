@@ -35,8 +35,9 @@ export function updateTracklist(state) {
         const trackNum = i + 1;
         const trackNumStr = String(trackNum).padStart(2, '0');
         const defaultName = state.trackNames[i] || `Track ${trackNumStr}`;
+        const defaultArtist = state.trackArtists[i] || '';
 
-        segments.push({ start, end, trackNum, trackNumStr, name: defaultName, duration: end - start });
+        segments.push({ start, end, trackNum, trackNumStr, name: defaultName, artist: defaultArtist, duration: end - start });
     }
 
     $badge.textContent = segments.length;
@@ -48,8 +49,11 @@ export function updateTracklist(state) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
       </button>
       <span class="track-num">${seg.trackNumStr}</span>
+      <div class="track-artist">
+        <input type="text" value="${escapeHtml(seg.artist)}" placeholder="Artist" data-index="${idx}" spellcheck="false">
+      </div>
       <div class="track-title">
-        <input type="text" value="${escapeHtml(seg.name)}" data-index="${idx}" spellcheck="false">
+        <input type="text" value="${escapeHtml(seg.name)}" placeholder="Title" data-index="${idx}" spellcheck="false">
       </div>
       <span class="track-time">${window.formatTime(seg.start)}</span>
       <span class="track-time">${window.formatTime(seg.end)}</span>
@@ -91,6 +95,14 @@ export function updateTracklist(state) {
             _state.trackNames[idx] = input.value;
         });
     });
+
+    // Attach track artist edit events
+    $trackList.querySelectorAll('.track-artist input').forEach(input => {
+        input.addEventListener('change', () => {
+            const idx = parseInt(input.dataset.index);
+            _state.trackArtists[idx] = input.value;
+        });
+    });
 }
 
 /**
@@ -99,6 +111,15 @@ export function updateTracklist(state) {
 export function applyDiscogsNames(tracklist) {
     if (!_state) return;
     _state.trackNames = tracklist.map(t => t.title);
+
+    // Handle per-track artists from Discogs (compilations/splits)
+    _state.trackArtists = tracklist.map(t => {
+        if (t.artists && t.artists.length > 0) {
+            return t.artists.map(a => a.name).join(', ');
+        }
+        return ''; // Default to empty (uses Album Artist)
+    });
+
     updateTracklist(_state);
 }
 

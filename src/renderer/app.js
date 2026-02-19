@@ -22,6 +22,7 @@ const state = {
     audioInfo: null,
     markers: [],         // Array of marker times (seconds), sorted
     trackNames: [],      // Track names (from Discogs or manual)
+    trackArtists: [],    // Per-track artist names
     discogsInfo: null,    // Discogs release info if loaded
     isPlaying: false,
     isProcessing: false,
@@ -124,6 +125,7 @@ async function loadFile(filePath) {
         // Clear previous markers
         state.markers = [];
         state.trackNames = [];
+        state.trackArtists = [];
         state.discogsInfo = null;
         updateTracklist(state);
 

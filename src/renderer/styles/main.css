@@ -605,7 +605,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .track-row {
   display: grid;
-  grid-template-columns: 32px 40px 1fr 80px 80px 80px 40px;
+  grid-template-columns: 32px 40px 1fr 1.5fr 80px 80px 80px 40px;
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
@@ -673,6 +673,34 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .track-title input:focus {
   border-color: var(--accent);
   background: var(--bg-primary);
+}
+
+.track-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-artist input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 12px;
+  width: 100%;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.track-artist input:hover {
+  border-color: var(--border);
+}
+
+.track-artist input:focus {
+  border-color: var(--accent);
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .track-time {

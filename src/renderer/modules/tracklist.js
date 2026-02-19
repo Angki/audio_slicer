@@ -58,7 +58,9 @@ export function updateTracklist(state) {
       </div>
       <span class="track-time">${window.formatTime(seg.start)}</span>
       <span class="track-time">${window.formatTime(seg.end)}</span>
-      <span class="track-duration">${window.formatDuration(seg.duration)}</span>
+      <div class="track-duration">
+        <input type="text" value="${window.formatDuration(seg.duration)}" data-index="${idx}" class="duration-input" spellcheck="false">
+      </div>
       <button class="track-remove-btn" data-marker-index="${idx < segments.length - 1 ? idx : -1}" title="${idx < segments.length - 1 ? 'Remove marker after this track' : ''}">
         ${idx < segments.length - 1 ? '×' : ''}
       </button>
@@ -84,7 +86,7 @@ export function updateTracklist(state) {
             const markerIdx = parseInt(btn.dataset.markerIndex);
             if (markerIdx >= 0 && markerIdx < _state.markers.length) {
                 window.removeMarker(markerIdx);
-                window.syncMarkersToRegions();
+                window.syncMarkersToRegions(); // Sync immediately
             }
         });
     });
@@ -104,6 +106,51 @@ export function updateTracklist(state) {
             pushHistory('Edit Artist');
             const idx = parseInt(input.dataset.index);
             _state.trackArtists[idx] = input.value;
+        });
+    });
+
+    // Attach duration edit events
+    $trackList.querySelectorAll('.duration-input').forEach(input => {
+        input.addEventListener('change', () => {
+            const idx = parseInt(input.dataset.index);
+            const newDuration = parseDuration(input.value);
+
+            if (newDuration === null || newDuration < 0.1) {
+                // Invalid, revert
+                updateTracklist(_state);
+                return;
+            }
+
+            if (idx >= _state.markers.length) {
+                alert("Cannot change duration of the last track (fixed by file length).");
+                updateTracklist(_state);
+                return;
+            }
+
+            // Current bounds
+            const prevTime = idx === 0 ? 0 : _state.markers[idx - 1];
+            const oldEndTime = _state.markers[idx];
+            const oldDuration = oldEndTime - prevTime;
+
+            const diff = newDuration - oldDuration;
+
+            if (Math.abs(diff) < 0.001) return; // No change
+
+            const audioDuration = _state.audioInfo ? _state.audioInfo.duration : 0;
+            const newMarkers = [..._state.markers];
+
+            // Apply diff to markers [idx...end]
+            for (let k = idx; k < newMarkers.length; k++) {
+                newMarkers[k] += diff;
+                if (newMarkers[k] > audioDuration - 0.1) {
+                    newMarkers[k] = audioDuration - 0.1;
+                }
+            }
+
+            newMarkers.sort((a, b) => a - b);
+
+            // setMarkers handles visual sync and history (unless we implement custom history here? setMarkers handles it)
+            window.setMarkers(newMarkers);
         });
     });
 }
@@ -130,5 +177,24 @@ window.applyDiscogsNames = applyDiscogsNames;
 
 // ── Helper ──
 function escapeHtml(str) {
+    if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function parseDuration(str) {
+    // MM:SS or MM:SS.ms or HH:MM:SS
+    const parts = str.split(':').map(Number);
+    if (parts.some(isNaN)) return null;
+
+    let seconds = 0;
+    if (parts.length === 3) {
+        seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+        seconds = parts[0] * 60 + parts[1];
+    } else if (parts.length === 1) {
+        seconds = parts[0];
+    } else {
+        return null;
+    }
+    return seconds;
 }

@@ -82,19 +82,55 @@ export function initWaveform() {
     });
 
     // ── Region events (marker dragging) ──
-    regionsPlugin.on('region-updated', (region) => {
-        // Update marker position in state
-        const state = window.appState;
-        const idx = state.markers.findIndex(m => Math.abs(m - region.start) < 0.5 || region.id === `marker_${state.markers.indexOf(parseFloat(region.id?.replace('marker_', '')))}`);
+    // ── Region events (marker dragging) ──
+    let isDragging = false;
 
-        // Find marker by region id
+    regionsPlugin.on('region-updated', (region) => {
+        // Push history on start of drag
+        if (!isDragging) {
+            if (window.pushHistory) window.pushHistory('Move Marker');
+            isDragging = true;
+        }
+
+        const state = window.appState;
         const markerIdx = parseInt(region.id?.replace('marker_', ''));
+
         if (!isNaN(markerIdx) && markerIdx < state.markers.length) {
-            state.markers[markerIdx] = region.start;
-            state.markers.sort((a, b) => a - b);
+            // Constraint Logic (prevent overlap)
+            let minTime = 0.0;
+            let maxTime = wavesurfer.getDuration();
+
+            if (markerIdx > 0) {
+                minTime = state.markers[markerIdx - 1] + 0.1;
+            }
+            if (markerIdx < state.markers.length - 1) {
+                maxTime = state.markers[markerIdx + 1] - 0.1;
+            }
+
+            let newTime = region.start;
+            // Clamp
+            if (newTime < minTime) newTime = minTime;
+            if (newTime > maxTime) newTime = maxTime;
+
+            // Apply clamp if needed
+            if (Math.abs(newTime - region.start) > 0.0001) {
+                region.setOptions({ start: newTime, end: newTime + 0.01 });
+            }
+
+            state.markers[markerIdx] = newTime;
+            // No sorting here to maintain ID->Index mapping!
+
             const { updateTracklist } = window._tracklistModule || {};
             if (updateTracklist) updateTracklist(state);
         }
+    });
+
+    regionsPlugin.on('region-update-end', () => {
+        isDragging = false;
+        // Ensure state is sorted just in case, but usually we maintained order.
+        // Actually, sorting breaks ID map if order swapped. 
+        // With constraints, order shouldn't swap.
+        // So we leave it.
     });
 
     // ── Playback controls ──

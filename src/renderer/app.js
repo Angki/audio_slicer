@@ -3,7 +3,7 @@
  * Orchestrates waveform, controls, track list, Discogs, and export.
  */
 
-import { initWaveform, loadAudio, getWavesurfer, destroyWaveform } from './modules/waveform.js';
+import { initWaveform, loadAudio, getWavesurfer, destroyWaveform, syncMarkersToRegions } from './modules/waveform.js';
 import { initControls } from './modules/controls.js';
 import { initTracklist, updateTracklist } from './modules/tracklist.js';
 import { initDiscogs } from './modules/discogs-ui.js';
@@ -193,6 +193,7 @@ window.updateMarkerCount = updateMarkerCount;
 function setMarkers(markerTimes, skipHistory = false) {
     if (!skipHistory) pushHistory('Set Markers');
     state.markers = [...markerTimes].sort((a, b) => a - b);
+    syncMarkersToRegions(); // Added visual sync
     updateTracklist(state);
     updateMarkerCount();
 }

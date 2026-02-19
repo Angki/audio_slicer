@@ -40,12 +40,14 @@ export function initSmartImport(state) {
     $btnCancel.addEventListener('click', closeModal);
 
     // Parse
-    $btnParse.addEventListener('click', () => {
-        const text = $textarea.value;
-        _parsedTracks = parseTracklist(text);
-        renderPreview(_parsedTracks);
-        $btnApply.disabled = _parsedTracks.length === 0;
-    });
+    if ($btnParse) {
+        $btnParse.addEventListener('click', () => {
+            const text = $textarea.value;
+            _parsedTracks = parseTracklist(text);
+            renderPreview(_parsedTracks);
+            $btnApply.disabled = _parsedTracks.length === 0;
+        });
+    }
 
     // Apply
     $btnApply.addEventListener('click', () => {
@@ -61,7 +63,7 @@ export function initSmartImport(state) {
         }
 
         $preview.innerHTML = tracks.map(t => {
-            const timeClass = t.time !== null ? 'preview-time' : 'preview-time text-muted';
+            const timeClass = (t.time !== null && !isNaN(t.time)) ? 'preview-time' : 'preview-time text-muted';
             return `
             <div class="preview-row">
                 <span class="${timeClass}">${t.timeStr || '-'}</span>
@@ -111,7 +113,6 @@ export function parseTracklist(text) {
             if (timeMatch) {
                 timeStr = timeMatch[1];
                 // If 0:00 is found, it strongly suggests Start Time mode, unless we are in mixed mode?
-                // We'll treat unparenthesized time as Start Time unless inferred otherwise.
                 content = content.replace(timeStr, '').trim();
             }
         }
@@ -129,7 +130,7 @@ export function parseTracklist(text) {
     });
 
     // Second Pass: Calculate Start Times
-    // Strategy: If explicit durations found, use Cumulative Mode for those tracks.
+    // Strategy: If explicit durations found, use Cumulative Mode until broken.
     // Otherwise, use Absolute Mode.
 
     let currentCumulativeTime = 0;
@@ -139,15 +140,21 @@ export function parseTracklist(text) {
 
         if (hasDurations || (p.isDuration && p.seconds)) {
             // Cumulative Mode Logic
-            // Start time is current cumulative time
-            startTime = currentCumulativeTime;
+            // If previous chain is valid (currentCumulativeTime !== null), use it.
+            if (currentCumulativeTime !== null) {
+                startTime = currentCumulativeTime;
 
-            // Advance cumulative time by this track's duration
-            if (p.seconds) {
-                currentCumulativeTime += p.seconds;
+                // Calculate NEXT start time
+                if (p.seconds) {
+                    currentCumulativeTime += p.seconds;
+                } else {
+                    // If duration missing, we can't determine START of next track properly relative to start
+                    // But we DO know start of THIS track.
+                    // So break chain for NEXT iteration.
+                    currentCumulativeTime = null;
+                }
             } else {
-                // If duration missing, we can't accurately predict next start.
-                // But we still assign a start time to THIS track (end of previous).
+                startTime = null; // Broken chain
             }
         } else {
             // Absolute Mode Logic (Start Times provided)
@@ -162,25 +169,25 @@ export function parseTracklist(text) {
         let artist = '';
         let title = p.content;
 
-        // Separators: " - ", " – " (en-dash), "Artist- Title"
-        // Allow tight dashes if followed by space? Or just split by dash.
-        // User example: "Putrido– Intro" (En-dash, space after)
-        // We look for dash surrounded by spaces, OR attached to first word if distinct?
-        // Safe regex: `\s*[-–]\s*` matches " - ", " – ", "- ", " –"
-        const sepRegex = /\s*[-–]\s+/;
+        // Separators: " - ", " – ", " — ", "Artist- Title"
+        // Regex allows 0 or more spaces around dash.
+        // Include hyphen, en-dash, em-dash.
+        const sepRegex = /\s*[-–—]\s*/;
         const parts = p.content.split(sepRegex);
 
         if (parts.length >= 2) {
+            // Heuristic: usually Artist - Title.
+            // If "Putrido– Intro", parts[0]="Putrido", parts[1]="Intro"
             artist = parts[0].trim();
             title = parts.slice(1).join(' - ').trim();
         }
 
-        // Cleanup
-        title = title.replace(/^[-–]\s+/, '').trim();
+        // Cleanup title if dash remains at start
+        title = title.replace(/^[-–—]\s+/, '').trim();
 
         // Format display string
         let displayTime = '-';
-        if (p.startTime !== null && p.startTime !== undefined) {
+        if (p.startTime !== null && !isNaN(p.startTime)) {
             displayTime = window.formatTime ? window.formatTime(p.startTime) : formatTimeLocal(p.startTime);
         } else if (p.isDuration) {
             displayTime = `Dur: ${p.timeStr}`;
@@ -200,32 +207,34 @@ export function parseTracklist(text) {
 
 function applyTracks(tracks, replace) {
     // Check if we have enough valid times to replace markers
-    // We need at least some times > 0.
-    const validTimes = tracks.filter(t => t.time !== null && t.time > 0.1);
+    const validTimes = tracks.filter(t => t.time !== null && !isNaN(t.time) && t.time > 0.1);
     const hasEnoughTimes = validTimes.length > 0;
+
+    let historySnapshot = null;
+    if (window.pushHistory) {
+        // Create snapshot before modification
+        // We'll rely on app.js history integration or manual push here if available
+    }
 
     if (replace && hasEnoughTimes) {
         // REPLACE MARKERS
+        // Apply undo history snapshot
+        if (window.pushHistory) window.pushHistory('Smart Import (Replace Markers)');
+
         // validTimes are Split Points (Track 2 start, Track 3 start...)
         const newMarkers = validTimes.map(t => t.time).sort((a, b) => a - b);
         const uniqueMarkers = [...new Set(newMarkers)];
 
-        window.setMarkers(uniqueMarkers);
+        // Pass true to skip internal history push in setMarkers
+        if (window.setMarkers) window.setMarkers(uniqueMarkers, true);
 
         // Apply Metadata
-        // Align tracks with markers.
-        // Track 1 -> tracks[0]
-        // Track 2 -> tracks[1] (starts at marker 0)
         _state.trackNames = tracks.map(t => t.title);
         _state.trackArtists = tracks.map(t => t.artist);
 
     } else {
-        // SEQUENTIAL METADATA ONLY (No marker change)
-        // Just fill in names/artists for existing tracks (or new ones if user manually adds later)
-        // We populate the state arrays. AutoSlice uses index matching.
-        // If user has 5 tracks defined in UI, we update 5 names.
-        // If user has 0 tracks (no markers), we can't do much except store them?
-        // Actually, if replace=false, we just update existing.
+        // SEQUENTIAL METADATA ONLY
+        if (window.pushHistory) window.pushHistory('Smart Import (Metadata Only)');
 
         const count = Math.min(tracks.length, _state.markers.length + 1);
         for (let i = 0; i < count; i++) {

@@ -4,6 +4,7 @@
  */
 
 let _state = null;
+import { pushHistory } from './history.js';
 
 export function initTracklist(state) {
     _state = state;
@@ -91,6 +92,7 @@ export function updateTracklist(state) {
     // Attach track name edit events
     $trackList.querySelectorAll('.track-title input').forEach(input => {
         input.addEventListener('change', () => {
+            pushHistory('Edit Track Name');
             const idx = parseInt(input.dataset.index);
             _state.trackNames[idx] = input.value;
         });
@@ -99,6 +101,7 @@ export function updateTracklist(state) {
     // Attach track artist edit events
     $trackList.querySelectorAll('.track-artist input').forEach(input => {
         input.addEventListener('change', () => {
+            pushHistory('Edit Artist');
             const idx = parseInt(input.dataset.index);
             _state.trackArtists[idx] = input.value;
         });

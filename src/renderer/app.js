@@ -8,6 +8,7 @@ import { initControls } from './modules/controls.js';
 import { initTracklist, updateTracklist } from './modules/tracklist.js';
 import { initDiscogs } from './modules/discogs-ui.js';
 import { initSmartImport } from './modules/smart-import.js';
+import { initHistory, pushHistory, clearHistory } from './modules/history.js';
 
 // ── App State ──────────────────────────────────────────────────
 window.onerror = function (msg, url, line, col, error) {
@@ -128,7 +129,13 @@ async function loadFile(filePath) {
         state.trackNames = [];
         state.trackArtists = [];
         state.discogsInfo = null;
+        state.trackNames = [];
+        state.trackArtists = [];
+        state.discogsInfo = null;
         updateTracklist(state);
+
+        // Reset history
+        clearHistory();
 
         hideLoading();
     } catch (err) {
@@ -144,6 +151,7 @@ window.loadFile = loadFile;
 function addMarker(time) {
     // Don't add duplicates (within 0.1s)
     if (state.markers.some(m => Math.abs(m - time) < 0.1)) return;
+    pushHistory('Add Marker');
     state.markers.push(time);
     state.markers.sort((a, b) => a - b);
     updateTracklist(state);
@@ -151,12 +159,14 @@ function addMarker(time) {
 }
 
 function removeMarker(index) {
+    pushHistory('Remove Marker');
     state.markers.splice(index, 1);
     updateTracklist(state);
     updateMarkerCount();
 }
 
 function clearMarkers() {
+    pushHistory('Clear Markers');
     state.markers = [];
     const ws = getWavesurfer();
     if (ws && ws.regions) {
@@ -180,7 +190,8 @@ window.clearMarkers = clearMarkers;
 window.updateMarkerCount = updateMarkerCount;
 
 // ── Set markers from detection ─────────────────────────────────
-function setMarkers(markerTimes) {
+function setMarkers(markerTimes, skipHistory = false) {
+    if (!skipHistory) pushHistory('Set Markers');
     state.markers = [...markerTimes].sort((a, b) => a - b);
     updateTracklist(state);
     updateMarkerCount();
@@ -248,4 +259,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initTracklist(state);
     initDiscogs(state);
     initSmartImport(state);
+    initHistory(state);
 });

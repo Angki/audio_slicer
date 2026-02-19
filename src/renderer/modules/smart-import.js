@@ -21,14 +21,16 @@ export function initSmartImport(state) {
     let _parsedTracks = [];
 
     // Open Modal
-    $btnOpen.addEventListener('click', () => {
-        $textarea.value = '';
-        _parsedTracks = [];
-        renderPreview([]);
-        $btnApply.disabled = true;
-        $modal.classList.remove('hidden');
-        $textarea.focus();
-    });
+    if ($btnOpen) {
+        $btnOpen.addEventListener('click', () => {
+            $textarea.value = '';
+            _parsedTracks = [];
+            renderPreview([]);
+            $btnApply.disabled = true;
+            $modal.classList.remove('hidden');
+            $textarea.focus();
+        });
+    }
 
     // Close Modal
     const closeModal = () => {
@@ -58,13 +60,15 @@ export function initSmartImport(state) {
             return;
         }
 
-        $preview.innerHTML = tracks.map(t => `
+        $preview.innerHTML = tracks.map(t => {
+            const timeClass = t.time !== null ? 'preview-time' : 'preview-time text-muted';
+            return `
             <div class="preview-row">
-                <span class="preview-time">${t.timeStr || '-'}</span>
+                <span class="${timeClass}">${t.timeStr || '-'}</span>
                 <span class="preview-artist" title="${escapeHtml(t.artist || '')}">${escapeHtml(t.artist || '')}</span>
                 <span class="preview-title" title="${escapeHtml(t.title || '')}">${escapeHtml(t.title || '')}</span>
             </div>
-        `).join('');
+        `}).join('');
     }
 }
 
@@ -73,28 +77,46 @@ export function initSmartImport(state) {
  */
 export function parseTracklist(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
-    const tracks = [];
-    // Regex for timestamp: 0:00, 01:23, 1:23:45
-    const timeRegex = /(\d{1,2}:\d{2}(?::\d{2})?)/;
 
-    for (let line of lines) {
+    // Regexes
+    const durationRegex = /\((\d{1,2}:\d{2}(?::\d{2})?)\)/; // (MM:SS) or (HH:MM:SS)
+    const timeRegex = /(\d{1,2}:\d{2}(?::\d{2})?)/;        // MM:SS or HH:MM:SS (Start time assumption)
+
+    // First pass: Parse raw data
+    let hasDurations = false;
+
+    const parsedLines = lines.map(line => {
         let content = line.trim();
 
-        // Remove leading numbering (1. , 01. , 1 - , 1) )
-        // We use a safe regex that expects a dot, paren, or hyphen after digits at start of line
-        content = content.replace(/^\d{1,3}[\.\)\-]\s+/, '');
+        // Remove numbering (1. , 01. , 1 - , 1 )
+        const numberingMatch = content.match(/^\d+[\.\)\-]?\s+/);
+        if (numberingMatch) {
+            content = content.replace(numberingMatch[0], '');
+        }
 
         let timeStr = null;
         let seconds = null;
+        let isDuration = false;
 
-        // Extract time (first occurrence)
-        const timeMatch = content.match(timeRegex);
-        if (timeMatch) {
-            timeStr = timeMatch[1];
-            // Remove time from content string
-            content = content.replace(timeStr, '').trim();
+        // Check for Duration in parens -> (3:45)
+        const durMatch = content.match(durationRegex);
+        if (durMatch) {
+            timeStr = durMatch[1];
+            isDuration = true;
+            hasDurations = true; // Flag explicit duration mode
+            content = content.replace(durMatch[0], '').trim();
+        } else {
+            // Check for Time Pattern -> 0:00
+            const timeMatch = content.match(timeRegex);
+            if (timeMatch) {
+                timeStr = timeMatch[1];
+                // If 0:00 is found, it strongly suggests Start Time mode, unless we are in mixed mode?
+                // We'll treat unparenthesized time as Start Time unless inferred otherwise.
+                content = content.replace(timeStr, '').trim();
+            }
+        }
 
-            // Parse seconds
+        if (timeStr) {
             const parts = timeStr.split(':').map(Number);
             if (parts.length === 3) {
                 seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
@@ -103,70 +125,108 @@ export function parseTracklist(text) {
             }
         }
 
-        // Extract Artist - Title
-        let artist = '';
-        let title = content;
+        return { content, timeStr, seconds, isDuration };
+    });
 
-        // Common separators: " - ", " – " (en-dash)
-        // If separators exist, split.
-        // Heuristic: If we have "Part A - Part B", usually "Artist - Title".
-        // Example: "Gangrene Discharge - Conjoined At the Ass"
-        const sepRegex = /\s+[-–]\s+/;
-        const parts = content.split(sepRegex);
+    // Second Pass: Calculate Start Times
+    // Strategy: If explicit durations found, use Cumulative Mode for those tracks.
+    // Otherwise, use Absolute Mode.
+
+    let currentCumulativeTime = 0;
+
+    const tracks = parsedLines.map((p, idx) => {
+        let startTime = null;
+
+        if (hasDurations || (p.isDuration && p.seconds)) {
+            // Cumulative Mode Logic
+            // Start time is current cumulative time
+            startTime = currentCumulativeTime;
+
+            // Advance cumulative time by this track's duration
+            if (p.seconds) {
+                currentCumulativeTime += p.seconds;
+            } else {
+                // If duration missing, we can't accurately predict next start.
+                // But we still assign a start time to THIS track (end of previous).
+            }
+        } else {
+            // Absolute Mode Logic (Start Times provided)
+            startTime = p.seconds; // Can be null
+        }
+
+        return { ...p, startTime };
+    });
+
+    // Third Pass: Extract Metadata & Finalize
+    return tracks.map(p => {
+        let artist = '';
+        let title = p.content;
+
+        // Separators: " - ", " – " (en-dash), "Artist- Title"
+        // Allow tight dashes if followed by space? Or just split by dash.
+        // User example: "Putrido– Intro" (En-dash, space after)
+        // We look for dash surrounded by spaces, OR attached to first word if distinct?
+        // Safe regex: `\s*[-–]\s*` matches " - ", " – ", "- ", " –"
+        const sepRegex = /\s*[-–]\s+/;
+        const parts = p.content.split(sepRegex);
 
         if (parts.length >= 2) {
             artist = parts[0].trim();
-            title = parts.slice(1).join(' - ').trim(); // Join rest in case title has hyphens
+            title = parts.slice(1).join(' - ').trim();
         }
 
-        // Clean any leading/trailing symbols from title
+        // Cleanup
         title = title.replace(/^[-–]\s+/, '').trim();
 
-        // Only add if meaningful content found
-        if (title.length > 0 || timeStr) {
-            tracks.push({ time: seconds, timeStr, artist, title });
+        // Format display string
+        let displayTime = '-';
+        if (p.startTime !== null && p.startTime !== undefined) {
+            displayTime = window.formatTime ? window.formatTime(p.startTime) : formatTimeLocal(p.startTime);
+        } else if (p.isDuration) {
+            displayTime = `Dur: ${p.timeStr}`;
         }
-    }
-    return tracks;
+
+        // Filter out empty rows
+        if (!title && !artist && !p.timeStr) return null;
+
+        return {
+            time: p.startTime,
+            timeStr: displayTime,
+            artist,
+            title
+        };
+    }).filter(t => t !== null);
 }
 
 function applyTracks(tracks, replace) {
-    // Check if parse results have valid times
-    const hasTimes = tracks.some(t => t.time !== null);
+    // Check if we have enough valid times to replace markers
+    // We need at least some times > 0.
+    const validTimes = tracks.filter(t => t.time !== null && t.time > 0.1);
+    const hasEnoughTimes = validTimes.length > 0;
 
-    if (replace && hasTimes) {
-        // REPLACE MARKERS logic
-        // We treat times as TRACK START times.
-        // AutoSlice markers are SPLIT points (end of prev track / start of next).
-        // Track 1 always starts at 0.
-        // If input has 0:00, it corresponds to Track 1.
-        // If input has 0:22, it corresponds to Track 2 start -> Marker at 0:22.
-
-        // 1. Extract split times (ignore 0:00 or Start of File)
-        const newMarkers = tracks
-            .map(t => t.time)
-            .filter(t => t !== null && t > 0.1) // Filter out 0 or very small
-            .sort((a, b) => a - b);
-
-        // Deduplicate
+    if (replace && hasEnoughTimes) {
+        // REPLACE MARKERS
+        // validTimes are Split Points (Track 2 start, Track 3 start...)
+        const newMarkers = validTimes.map(t => t.time).sort((a, b) => a - b);
         const uniqueMarkers = [...new Set(newMarkers)];
 
-        // Apply markers
         window.setMarkers(uniqueMarkers);
 
-        // 2. Apply Names/Artists
-        // We assume tracks array maps 1:1 to the detected segments if markers align.
-        // However, if we just set markers from input, we know they align perfectly (except last track end).
-        // tracks[0] -> Track 1
-        // tracks[1] -> Track 2 (marker 1)
-
+        // Apply Metadata
+        // Align tracks with markers.
+        // Track 1 -> tracks[0]
+        // Track 2 -> tracks[1] (starts at marker 0)
         _state.trackNames = tracks.map(t => t.title);
         _state.trackArtists = tracks.map(t => t.artist);
 
     } else {
-        // Just Update Text (Sequential)
-        // Applies titles/artists to existing markers
-        // Stop at whichever length is shorter
+        // SEQUENTIAL METADATA ONLY (No marker change)
+        // Just fill in names/artists for existing tracks (or new ones if user manually adds later)
+        // We populate the state arrays. AutoSlice uses index matching.
+        // If user has 5 tracks defined in UI, we update 5 names.
+        // If user has 0 tracks (no markers), we can't do much except store them?
+        // Actually, if replace=false, we just update existing.
+
         const count = Math.min(tracks.length, _state.markers.length + 1);
         for (let i = 0; i < count; i++) {
             _state.trackNames[i] = tracks[i].title;
@@ -177,10 +237,18 @@ function applyTracks(tracks, replace) {
     }
 
     // Refresh UI
-    window._tracklistModule.updateTracklist(_state);
+    if (window._tracklistModule) {
+        window._tracklistModule.updateTracklist(_state);
+    }
 }
 
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function formatTimeLocal(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
 }

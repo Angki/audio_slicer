@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; media-src 'self' file: blob:; img-src 'self' https: data:; connect-src 'self' https://api.discogs.com">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; media-src 'self' file: blob:; img-src 'self' https: data:; connect-src 'self' https://api.discogs.com">
   <title>AutoSlice</title>
   <link rel="stylesheet" href="styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
   <div id="app">
     <!-- ── Top Bar ── -->
@@ -15,10 +18,10 @@
       <div class="toolbar-left">
         <div class="app-logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <rect x="2" y="6" width="3" height="12" rx="1.5" fill="#7c5cfc"/>
-            <rect x="7" y="3" width="3" height="18" rx="1.5" fill="#a78bfa"/>
-            <rect x="12" y="8" width="3" height="8" rx="1.5" fill="#7c5cfc"/>
-            <rect x="17" y="4" width="3" height="16" rx="1.5" fill="#a78bfa"/>
+            <rect x="2" y="6" width="3" height="12" rx="1.5" fill="#7c5cfc" />
+            <rect x="7" y="3" width="3" height="18" rx="1.5" fill="#a78bfa" />
+            <rect x="12" y="8" width="3" height="8" rx="1.5" fill="#7c5cfc" />
+            <rect x="17" y="4" width="3" height="16" rx="1.5" fill="#a78bfa" />
           </svg>
           <span class="app-title">AutoSlice</span>
         </div>
@@ -29,7 +32,10 @@
       </div>
       <div class="toolbar-right">
         <button id="btnOpenFile" class="btn btn-ghost" title="Open file">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14,2 14,8 20,8" />
+          </svg>
           Open
         </button>
       </div>
@@ -38,10 +44,11 @@
     <!-- ── Drop Zone (shown when no file) ── -->
     <div id="dropZone" class="drop-zone">
       <div class="drop-zone-content">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+          opacity="0.4">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
         <h2>Drop audio file here</h2>
         <p>WAV, FLAC, AIFF, MP3</p>
@@ -76,11 +83,18 @@
         <!-- Playback Controls -->
         <div class="panel control-group playback-controls">
           <button id="btnPlayPause" class="btn btn-primary btn-play" title="Play / Pause">
-            <svg id="iconPlay" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-            <svg id="iconPause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <svg id="iconPlay" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5,3 19,12 5,21" />
+            </svg>
+            <svg id="iconPause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="hidden">
+              <rect x="6" y="4" width="4" height="16" />
+              <rect x="14" y="4" width="4" height="16" />
+            </svg>
           </button>
           <button id="btnStop" class="btn btn-ghost" title="Stop">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="1" />
+            </svg>
           </button>
         </div>
 
@@ -133,7 +147,10 @@
         <div class="panel track-list-panel">
           <div class="panel-header">
             <div class="panel-title">Tracks</div>
-            <div id="trackCountBadge" class="badge">0</div>
+            <div class="panel-header-right">
+              <button id="btnSmartImport" class="btn btn-sm btn-ghost" title="Paste tracklist text">Import Text</button>
+              <div id="trackCountBadge" class="badge">0</div>
+            </div>
           </div>
           <div id="trackList" class="track-list">
             <div class="empty-state">Run Auto Detect to find tracks</div>
@@ -180,7 +197,11 @@
           </label>
         </div>
         <button id="btnExport" class="btn btn-primary btn-export">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
           Export Tracks
         </button>
       </footer>
@@ -191,8 +212,38 @@
       <div class="loading-spinner"></div>
       <div id="loadingText" class="loading-text">Processing...</div>
     </div>
+    <!-- Smart Import Modal -->
+    <div id="smartImportModal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Smart Track Import</h3>
+          <button id="btnCloseSmartImport" class="btn btn-icon">×</button>
+        </div>
+        <p class="modal-hint">Paste tracklist below. Supports timestamps (0:00 Title) or plain titles.</p>
+        <textarea id="smartImportText" class="smart-import-input"
+          placeholder="0:00 Intro&#10;3:45 Track 2..."></textarea>
+
+        <div class="smart-import-controls">
+          <label class="checkbox-label">
+            <input id="checkSmartImportReplace" type="checkbox" checked>
+            Replace existing markers
+          </label>
+        </div>
+
+        <div id="smartImportPreview" class="smart-import-preview hidden">
+          <!-- Preview content injected here -->
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnCancelSmartImport" class="btn btn-ghost">Cancel</button>
+          <button id="btnApplySmartImport" class="btn btn-primary">Import</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script src="app.js" type="module"></script>
 </body>
+
 </html>

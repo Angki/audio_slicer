@@ -7,6 +7,7 @@ import { initWaveform, loadAudio, getWavesurfer, destroyWaveform } from './modul
 import { initControls } from './modules/controls.js';
 import { initTracklist, updateTracklist } from './modules/tracklist.js';
 import { initDiscogs } from './modules/discogs-ui.js';
+import { initSmartImport } from './modules/smart-import.js';
 
 // ── App State ──────────────────────────────────────────────────
 window.onerror = function (msg, url, line, col, error) {
@@ -246,4 +247,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initControls(state);
     initTracklist(state);
     initDiscogs(state);
+    initSmartImport(state);
 });

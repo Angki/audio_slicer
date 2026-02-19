@@ -167,13 +167,20 @@ function matchTracklist(segments, tracklist) {
 function renderTracklist(matched, tracklist) {
     const $tracklist = document.getElementById('discogsTracklist');
 
-    let html = matched.map(m => {
+    let html = `
+    <div class="discogs-actions-bar">
+        <label><input type="checkbox" id="discogsSelectAll" checked> Select All</label>
+    </div>
+    `;
+
+    html += matched.map(m => {
         const t = m.track;
         const badgeClass = m.confidence !== 'none' ? `match-${m.confidence}` : '';
         const badgeText = m.confidence !== 'none' ? m.confidence : '';
 
         return `
       <div class="discogs-track-row">
+        <input type="checkbox" class="discogs-track-check" data-index="${m.index || 0}" checked>
         <span class="discogs-track-pos">${t ? t.position : '-'}</span>
         <span class="discogs-track-title">${t ? escapeHtml(t.title) : 'N/A'}</span>
         <span class="discogs-track-duration">${t ? t.duration : '-'}</span>
@@ -182,13 +189,46 @@ function renderTracklist(matched, tracklist) {
     `;
     }).join('');
 
-    html += `<button class="btn btn-accent btn-apply-tracklist" id="btnApplyTracklist">Apply Track Names</button>`;
+    html += `
+        <div class="discogs-bottom-actions">
+            <button class="btn" id="btnApplyAll">Apply All Tracks</button>
+            <button class="btn btn-accent" id="btnApplySelected">Apply Selected</button>
+        </div>
+    `;
 
     $tracklist.innerHTML = html;
 
-    // Apply button
-    document.getElementById('btnApplyTracklist').addEventListener('click', () => {
+    // ── Checkbox Logic ──
+    const $selectAll = document.getElementById('discogsSelectAll');
+    const $checkboxes = $tracklist.querySelectorAll('.discogs-track-check');
+
+    $selectAll.addEventListener('change', (e) => {
+        $checkboxes.forEach(cb => cb.checked = e.target.checked);
+    });
+
+    // ── Apply Buttons ──
+    document.getElementById('btnApplyAll').addEventListener('click', () => {
         window.applyDiscogsNames(tracklist);
+    });
+
+    document.getElementById('btnApplySelected').addEventListener('click', () => {
+        // Collect tracks from checked boxes
+        const selectedTracks = [];
+        $checkboxes.forEach(cb => {
+            if (cb.checked) {
+                const idx = parseInt(cb.dataset.index);
+                if (tracklist[idx]) {
+                    selectedTracks.push(tracklist[idx]);
+                }
+            }
+        });
+
+        if (selectedTracks.length === 0) {
+            alert('No tracks selected');
+            return;
+        }
+
+        window.applyDiscogsNames(selectedTracks);
     });
 }
 

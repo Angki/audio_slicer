@@ -41,7 +41,8 @@ async function exportTracks(options) {
     } = options;
 
     // Create output folder: outputDir/Artist/Album/
-    const sanitize = (str) => str.replace(/[<>:"/\\|?*]/g, '_').trim();
+    // Remove illegal chars AND trailing dots (Windows issue)
+    const sanitize = (str) => str.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/\.+$/, '');
     const artistDir = sanitize(artist);
     const albumDir = sanitize(album);
     const outputPath = path.join(outputDir, artistDir, albumDir);

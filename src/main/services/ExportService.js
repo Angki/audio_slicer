@@ -37,6 +37,7 @@ async function exportTracks(options) {
         album = 'Unknown Album',
         year = '',
         trackNames = [],
+        trackArtists = [],
         mp3Bitrate = 320,
     } = options;
 
@@ -59,6 +60,7 @@ async function exportTracks(options) {
         const trackNum = i + 1;
         const trackNumStr = String(trackNum).padStart(2, '0');
         const trackName = trackNames[i] || `Track ${trackNumStr}`;
+        const trackArtist = (trackArtists && trackArtists[i]) ? trackArtists[i] : artist;
         const fileName = `${trackNumStr} - ${sanitize(trackName)}.${format}`;
 
         segments.push({
@@ -75,7 +77,7 @@ async function exportTracks(options) {
     // Export each segment
     const results = [];
     for (const seg of segments) {
-        await exportSegment(inputFile, seg, { format, artist, album, year, mp3Bitrate });
+        await exportSegment(inputFile, seg, { format, artist: seg.trackArtist, album, year, mp3Bitrate });
         results.push({
             trackNum: seg.trackNum,
             trackName: seg.trackName,

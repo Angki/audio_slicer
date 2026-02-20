@@ -4,12 +4,16 @@
  */
 
 const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
-const ffprobePath = require('ffprobe-static').path;
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
-const { execSync } = require('child_process');
+let ffmpegPath = require('ffmpeg-static');
+let ffprobePath = require('ffprobe-static').path;
+
+// Fix absolute paths for production (asar unpacked)
+if (ffmpegPath.includes('app.asar')) {
+    ffmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
+}
+if (ffprobePath.includes('app.asar')) {
+    ffprobePath = ffprobePath.replace('app.asar', 'app.asar.unpacked');
+}
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);

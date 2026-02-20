@@ -41,7 +41,11 @@ AutoSlice is a powerful desktop application for automatically slicing audio file
 ## Project Structure
 
 - `src/main`: Electron main process and backend services.
+  - `services/`: Core logic (Audio detection, Exporting, Discogs API).
+  - `utils/`: Shared generic utilities (e.g. FFmpeg pathing).
 - `src/renderer`: Frontend UI and logic.
+  - `state/`: Global frontend state manager (`store.js`).
+  - `modules/`: Decoupled UI components (waveform, tracklist, controls, history, etc.).
 
 ## License
 

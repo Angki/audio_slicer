@@ -122,6 +122,7 @@ export function initControls(state) {
             const result = await window.api.exportTracks({
                 inputFile: state.filePath,
                 markers: state.markers,
+                excludedRegions: state.excludedRegions || [],
                 outputDir,
                 format,
                 artist,

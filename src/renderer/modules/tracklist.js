@@ -139,14 +139,28 @@ export function updateTracklist(state) {
             const audioDuration = _state.audioInfo ? _state.audioInfo.duration : 0;
             const newMarkers = [..._state.markers];
 
-            // Apply diff to markers [idx...end]
-            for (let k = idx; k < newMarkers.length; k++) {
-                newMarkers[k] += diff;
-                if (newMarkers[k] > audioDuration - 0.1) {
-                    newMarkers[k] = audioDuration - 0.1;
+            // Apply diff ONLY to markers[idx] (the end of this track)
+            // This changes this track's duration AND the next track's start time.
+            newMarkers[idx] += diff;
+
+            // Constrain markers[idx]
+            // Cannot be less than previous marker + 0.1
+            if (newMarkers[idx] < prevTime + 0.1) {
+                newMarkers[idx] = prevTime + 0.1;
+            }
+            // Cannot be greater than next marker - 0.1 (if it exists)
+            if (idx + 1 < newMarkers.length) {
+                if (newMarkers[idx] > newMarkers[idx + 1] - 0.1) {
+                    newMarkers[idx] = newMarkers[idx + 1] - 0.1;
+                }
+            } else {
+                // Cannot be greater than audioDuration - 0.1
+                if (newMarkers[idx] > audioDuration - 0.1) {
+                    newMarkers[idx] = audioDuration - 0.1;
                 }
             }
 
+            // No need to sort if constraints held, but safe
             newMarkers.sort((a, b) => a - b);
 
             // setMarkers handles visual sync and history (unless we implement custom history here? setMarkers handles it)

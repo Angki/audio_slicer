@@ -43,6 +43,7 @@ export function pushHistory(actionDescription = 'Change') {
         markers: [..._state.markers],
         trackNames: [..._state.trackNames],
         trackArtists: [..._state.trackArtists],
+        excludedRegions: _state.excludedRegions.map(r => ({ ...r })), // Deep copy
         timestamp: Date.now(),
         desc: actionDescription
     };
@@ -71,6 +72,7 @@ export function undo() {
         markers: [..._state.markers],
         trackNames: [..._state.trackNames],
         trackArtists: [..._state.trackArtists],
+        excludedRegions: _state.excludedRegions.map(r => ({ ...r })),
         desc: 'Before Undo'
     };
     _redoStack.push(currentSnapshot);
@@ -92,6 +94,7 @@ export function redo() {
         markers: [..._state.markers],
         trackNames: [..._state.trackNames],
         trackArtists: [..._state.trackArtists],
+        excludedRegions: _state.excludedRegions.map(r => ({ ...r })),
         desc: 'Before Redo'
     };
     _historyStack.push(currentSnapshot);
@@ -108,27 +111,15 @@ function applySnapshot(snapshot) {
     _state.markers = [...snapshot.markers];
     _state.trackNames = [...snapshot.trackNames];
     _state.trackArtists = [...snapshot.trackArtists];
+    _state.excludedRegions = snapshot.excludedRegions ? snapshot.excludedRegions.map(r => ({ ...r })) : [];
 
     // Update UI
     // Markers need to be synced to WaveSurfer regions
     if (window.setMarkers) {
         // Use setMarkers to update state (redundant but refreshes regions)
-        // But setMarkers pushes to history? No, setMarkers in app.js doesn't pushHistory yet.
-        // We need a way to set markers WITHOUT pushing history.
-        // Or we update state manually and call update functions.
-
-        // Manual update of regions
-        const ws = window.getWavesurfer && window.getWavesurfer();
-        if (ws && ws.regions) {
-            ws.regions.clearRegions();
-            snapshot.markers.forEach(time => {
-                ws.regions.addRegion({
-                    start: time,
-                    color: 'rgba(124, 92, 252, 0.5)',
-                    drag: true,
-                    resize: false
-                });
-            });
+        // Manual update of regions (because setMarkers isn't fully separated from state mutation here)
+        if (window.syncMarkersToRegions) {
+            window.syncMarkersToRegions(); // We will update this in app/waveform to draw both markers and excluded regions
         }
 
         // Update tracklist

@@ -46,6 +46,7 @@ async function exportTracks(options) {
         year = '',
         trackNames = [],
         trackArtists = [],
+        excludedRegions = [],
         mp3Bitrate = 320,
     } = options;
 
@@ -71,9 +72,27 @@ async function exportTracks(options) {
         const trackArtist = (trackArtists && trackArtists[i]) ? trackArtists[i] : artist;
         const fileName = `${trackNumStr} - ${sanitize(trackName)}.${format}`;
 
+        // Determine overlapping excluded regions
+        const exclusions = [];
+        for (const reg of excludedRegions) {
+            // Check overlap
+            const segEnd = end !== null ? end : Number.MAX_VALUE;
+            if (reg.start < segEnd && reg.end > start) {
+                // Clamp exclusion to segment bounds
+                exclusions.push({
+                    start: Math.max(start, reg.start),
+                    end: Math.min(segEnd, reg.end)
+                });
+            }
+        }
+
+        // Sort exclusions
+        exclusions.sort((a, b) => a.start - b.start);
+
         segments.push({
             start,
             end,
+            exclusions,
             trackNum,
             trackNumStr,
             trackName,
@@ -104,14 +123,67 @@ async function exportTracks(options) {
  */
 function exportSegment(inputFile, segment, meta) {
     return new Promise((resolve, reject) => {
-        const { start, end, filePath } = segment;
+        const { start, end, filePath, exclusions } = segment;
         const { format, artist, album, year, mp3Bitrate } = meta;
 
-        let cmd = ffmpeg(inputFile)
-            .seekInput(start);
+        let cmd = ffmpeg(inputFile);
 
-        if (end !== null) {
-            cmd = cmd.duration(end - start);
+        if (!exclusions || exclusions.length === 0) {
+            // Standard export (no exclusions)
+            cmd = cmd.seekInput(start);
+            if (end !== null) {
+                cmd = cmd.duration(end - start);
+            }
+        } else {
+            // Complex filter export (stitching around exclusions)
+            // We need to build a filterchain that takes the segment from 'start' to 'end'
+            // and cuts out the 'exclusions'.
+            // Actually, it's easier to build valid "kept" chunks.
+            const keptChunks = [];
+            let current = start;
+
+            for (const excl of exclusions) {
+                if (excl.start > current) {
+                    keptChunks.push({ start: current, end: excl.start });
+                }
+                current = excl.end;
+            }
+
+            // Add final chunk if applicable
+            const segEnd = end !== null ? end : null; // If null, we don't have a defined end (till EOF)
+            // For complex filter, atrim needs an end. If end is null, we just omit the end property for the last chunk.
+            if (segEnd === null || current < segEnd) {
+                keptChunks.push({ start: current, end: segEnd });
+            }
+
+            // Build filter string
+            // Example for 2 chunks: [0:a]atrim=start=0:end=10,asetpts=PTS-STARTPTS[a1]; [0:a]atrim=start=15:end=20,asetpts=PTS-STARTPTS[a2]; [a1][a2]concat=n=2:v=0:a=1[outa]
+            const filterSpecs = [];
+            const concatInputs = [];
+
+            keptChunks.forEach((chunk, i) => {
+                const label = `a${i}`;
+                let trim = `atrim=start=${chunk.start}`;
+                if (chunk.end !== null) {
+                    trim += `:end=${chunk.end}`;
+                }
+                filterSpecs.push(`[0:a]${trim},asetpts=PTS-STARTPTS[${label}]`);
+                concatInputs.push(`[${label}]`);
+            });
+
+            if (keptChunks.length > 1) {
+                const concatFilter = `${concatInputs.join('')}concat=n=${keptChunks.length}:v=0:a=1[outa]`;
+                filterSpecs.push(concatFilter);
+                cmd = cmd.complexFilter(filterSpecs, ['outa']);
+            } else if (keptChunks.length === 1) {
+                // Only one chunk (e.g. exclusion was exactly at the end/start, resulting in 1 kept chunk)
+                // Just use the single trim
+                cmd = cmd.complexFilter(filterSpecs, [`a0`]);
+            } else {
+                // 0 chunks? The entire track was excluded!
+                // ffmpeg will error if there's no output.
+                return reject(new Error('Track is completely excluded. Cannot export empty track.'));
+            }
         }
 
         // Set codec based on format

@@ -25,6 +25,7 @@ const state = {
     markers: [],         // Array of marker times (seconds), sorted
     trackNames: [],      // Track names (from Discogs or manual)
     trackArtists: [],    // Per-track artist names
+    excludedRegions: [], // Array of {start, end} to skip during export
     discogsInfo: null,    // Discogs release info if loaded
     isPlaying: false,
     isProcessing: false,
@@ -131,6 +132,7 @@ async function loadFile(filePath) {
         state.discogsInfo = null;
         state.trackNames = [];
         state.trackArtists = [];
+        state.excludedRegions = [];
         state.discogsInfo = null;
         updateTracklist(state);
 
@@ -168,6 +170,7 @@ function removeMarker(index) {
 function clearMarkers() {
     pushHistory('Clear Markers');
     state.markers = [];
+    state.excludedRegions = []; // Also clear excluded regions when clearing all
     const ws = getWavesurfer();
     if (ws && ws.regions) {
         ws.regions.clearRegions();

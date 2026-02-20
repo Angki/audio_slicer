@@ -11,6 +11,7 @@ let spectrogramVisible = false;
 
 const MARKER_COLOR = 'rgba(124, 92, 252, 0.7)';
 const MARKER_HOVER_COLOR = 'rgba(167, 139, 250, 0.9)';
+const EXCLUDED_COLOR = 'rgba(239, 68, 68, 0.5)'; // Tailwind red-500 with opacity
 
 // ── Initialize WaveSurfer ──────────────────────────────────
 
@@ -81,6 +82,19 @@ export function initWaveform() {
         document.getElementById('totalTime').textContent = window.formatTime(duration);
     });
 
+    // ── Enable Drag Selection for Excluded Regions ──
+    regionsPlugin.enableDragSelection({
+        color: EXCLUDED_COLOR,
+    });
+
+    regionsPlugin.on('region-created', (region) => {
+        // If it was created without an ID starting with 'marker_', it's an excluded region
+        if (!region.id.startsWith('marker_') && !region.id.startsWith('excluded_')) {
+            // It's a newly drag-selected region
+            region.id = `excluded_${Date.now()}`;
+        }
+    });
+
     // ── Region events (marker dragging) ──
     // ── Region events (marker dragging) ──
     let isDragging = false;
@@ -122,15 +136,24 @@ export function initWaveform() {
 
             const { updateTracklist } = window._tracklistModule || {};
             if (updateTracklist) updateTracklist(state);
+        } else if (region.id.startsWith('excluded_')) {
+            // Excluded region updated (dragged or resized)
+            updateExcludedRegionsState();
         }
     });
 
-    regionsPlugin.on('region-update-end', () => {
+    regionsPlugin.on('region-update-end', (region) => {
         isDragging = false;
-        // Ensure state is sorted just in case, but usually we maintained order.
-        // Actually, sorting breaks ID map if order swapped. 
-        // With constraints, order shouldn't swap.
-        // So we leave it.
+    });
+
+    // ── Delete Excluded Region on Double Click ──
+    regionsPlugin.on('region-clicked', (region, e) => {
+        if (region.id.startsWith('excluded_')) {
+            // E.g., double click or shift+click to delete? Let's use double click.
+            // Actually, Wavesurfer handles double click on region via dblclick event, but region-clicked might suffice if we track time,
+            // or we use region-in/out.
+            // Let's listen to standard double click and see if it hits a region.
+        }
     });
 
     // ── Playback controls ──
@@ -195,11 +218,25 @@ export function initWaveform() {
         }
     });
 
-    // ── Click to add marker (double-click) ──
+    // ── Double click handlers ──
     wavesurfer.on('dblclick', (relativeX) => {
+        // Did we click on an excluded region?
         const time = relativeX * wavesurfer.getDuration();
-        window.addMarker(time);
-        syncMarkersToRegions();
+
+        // Find if clicked inside an excluded region
+        const regions = regionsPlugin.getRegions();
+        const clickedExclusion = regions.find(r => r.id.startsWith('excluded_') && time >= r.start && time <= r.end);
+
+        if (clickedExclusion) {
+            // Delete the excluded region
+            if (window.pushHistory) window.pushHistory('Remove Excluded Region');
+            clickedExclusion.remove();
+            updateExcludedRegionsState();
+        } else {
+            // Add a normal marker
+            window.addMarker(time);
+            syncMarkersToRegions();
+        }
     });
 
     // ── Global Keyboard Shortcuts ──
@@ -277,6 +314,31 @@ export function syncMarkersToRegions() {
             content: `${idx + 1}`,
         });
     });
+
+    // Add excluded regions
+    if (state.excludedRegions) {
+        state.excludedRegions.forEach((reg, idx) => {
+            regionsPlugin.addRegion({
+                id: `excluded_${idx}`,
+                start: reg.start,
+                end: reg.end,
+                color: EXCLUDED_COLOR,
+                drag: true,
+                resize: true,
+            });
+        });
+    }
+}
+
+function updateExcludedRegionsState() {
+    const state = window.appState;
+    if (!state) return;
+
+    const regions = regionsPlugin.getRegions();
+    state.excludedRegions = regions
+        .filter(r => r.id.startsWith('excluded_'))
+        .map(r => ({ start: r.start, end: r.end }))
+        .sort((a, b) => a.start - b.start);
 }
 
 window.syncMarkersToRegions = syncMarkersToRegions;

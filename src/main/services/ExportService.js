@@ -6,6 +6,9 @@
 const ffmpeg = require('fluent-ffmpeg');
 let ffmpegPath = require('ffmpeg-static');
 let ffprobePath = require('ffprobe-static').path;
+const path = require('path');
+const fs = require('fs');
+const NodeID3 = require('node-id3');
 
 // Fix absolute paths for production (asar unpacked)
 if (ffmpegPath.includes('app.asar')) {

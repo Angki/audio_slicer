@@ -11,27 +11,14 @@ import { initSmartImport } from './modules/smart-import.js';
 import { initHistory, pushHistory, clearHistory } from './modules/history.js';
 
 // ── App State ──────────────────────────────────────────────────
+import { state } from './state/store.js';
+
 window.onerror = function (msg, url, line, col, error) {
     alert(`Global Error: ${msg}\nLine: ${line}\nStack: ${error ? error.stack : ''}`);
 };
 window.addEventListener('unhandledrejection', (event) => {
     alert(`Unhandled Rejection: ${event.reason}`);
 });
-
-const state = {
-    filePath: null,
-    wavPath: null,
-    audioInfo: null,
-    markers: [],         // Array of marker times (seconds), sorted
-    trackNames: [],      // Track names (from Discogs or manual)
-    trackArtists: [],    // Per-track artist names
-    excludedRegions: [], // Array of {start, end} to skip during export
-    discogsInfo: null,    // Discogs release info if loaded
-    isPlaying: false,
-    isProcessing: false,
-};
-
-window.appState = state;
 
 // ── DOM References ─────────────────────────────────────────────
 const $dropZone = document.getElementById('dropZone');

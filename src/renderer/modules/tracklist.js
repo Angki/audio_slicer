@@ -19,17 +19,25 @@ export function updateTracklist(state) {
     _state = state;
     const $trackList = document.getElementById('trackList');
     const $badge = document.getElementById('trackCountBadge');
-    const markers = state.markers;
-    const duration = state.audioInfo ? state.audioInfo.duration : 0;
 
-    if (markers.length === 0) {
+    if (state.markers.length === 0) {
         $trackList.innerHTML = '<div class="empty-state">Run Auto Detect to find tracks</div>';
         $badge.textContent = '0';
         return;
     }
 
-    // Build track segments
+    const segments = buildSegments(state);
+    $badge.textContent = segments.length;
+
+    $trackList.innerHTML = renderTracklist(segments);
+    attachTracklistEvents($trackList, segments);
+}
+
+function buildSegments(state) {
     const segments = [];
+    const duration = state.audioInfo ? state.audioInfo.duration : 0;
+    const markers = state.markers;
+
     for (let i = 0; i <= markers.length; i++) {
         const start = i === 0 ? 0 : markers[i - 1];
         const end = i === markers.length ? duration : markers[i];
@@ -40,11 +48,11 @@ export function updateTracklist(state) {
 
         segments.push({ start, end, trackNum, trackNumStr, name: defaultName, artist: defaultArtist, duration: end - start });
     }
+    return segments;
+}
 
-    $badge.textContent = segments.length;
-
-    // Render
-    $trackList.innerHTML = segments.map((seg, idx) => `
+function renderTracklist(segments) {
+    return segments.map((seg, idx) => `
     <div class="track-row" data-index="${idx}">
       <button class="track-play-btn" data-start="${seg.start}" data-end="${seg.end}" title="Preview">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
@@ -66,7 +74,9 @@ export function updateTracklist(state) {
       </button>
     </div>
   `).join('');
+}
 
+function attachTracklistEvents($trackList, segments) {
     // Attach play button events
     $trackList.querySelectorAll('.track-play-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -116,7 +126,6 @@ export function updateTracklist(state) {
             const newDuration = parseDuration(input.value);
 
             if (newDuration === null || newDuration < 0.1) {
-                // Invalid, revert
                 updateTracklist(_state);
                 return;
             }
@@ -127,43 +136,32 @@ export function updateTracklist(state) {
                 return;
             }
 
-            // Current bounds
             const prevTime = idx === 0 ? 0 : _state.markers[idx - 1];
             const oldEndTime = _state.markers[idx];
             const oldDuration = oldEndTime - prevTime;
-
             const diff = newDuration - oldDuration;
 
-            if (Math.abs(diff) < 0.001) return; // No change
+            if (Math.abs(diff) < 0.001) return;
 
             const audioDuration = _state.audioInfo ? _state.audioInfo.duration : 0;
             const newMarkers = [..._state.markers];
 
-            // Apply diff ONLY to markers[idx] (the end of this track)
-            // This changes this track's duration AND the next track's start time.
             newMarkers[idx] += diff;
 
-            // Constrain markers[idx]
-            // Cannot be less than previous marker + 0.1
             if (newMarkers[idx] < prevTime + 0.1) {
                 newMarkers[idx] = prevTime + 0.1;
             }
-            // Cannot be greater than next marker - 0.1 (if it exists)
             if (idx + 1 < newMarkers.length) {
                 if (newMarkers[idx] > newMarkers[idx + 1] - 0.1) {
                     newMarkers[idx] = newMarkers[idx + 1] - 0.1;
                 }
             } else {
-                // Cannot be greater than audioDuration - 0.1
                 if (newMarkers[idx] > audioDuration - 0.1) {
                     newMarkers[idx] = audioDuration - 0.1;
                 }
             }
 
-            // No need to sort if constraints held, but safe
             newMarkers.sort((a, b) => a - b);
-
-            // setMarkers handles visual sync and history (unless we implement custom history here? setMarkers handles it)
             window.setMarkers(newMarkers);
         });
     });
@@ -192,11 +190,10 @@ window.applyDiscogsNames = applyDiscogsNames;
 // ── Helper ──
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function parseDuration(str) {
-    // MM:SS or MM:SS.ms or HH:MM:SS
     const parts = str.split(':').map(Number);
     if (parts.some(isNaN)) return null;
 

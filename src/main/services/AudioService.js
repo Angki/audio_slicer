@@ -3,22 +3,11 @@
  * Handles audio decoding, RMS analysis, and gap detection.
  */
 
-const ffmpeg = require('fluent-ffmpeg');
-let ffmpegPath = require('ffmpeg-static');
-let ffprobePath = require('ffprobe-static').path;
+const ffmpeg = require('../utils/ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { execSync } = require('child_process');
-if (ffmpegPath.includes('app.asar')) {
-    ffmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
-}
-if (ffprobePath.includes('app.asar')) {
-    ffprobePath = ffprobePath.replace('app.asar', 'app.asar.unpacked');
-}
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 const TEMP_DIR = path.join(os.tmpdir(), 'autoslice');
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });

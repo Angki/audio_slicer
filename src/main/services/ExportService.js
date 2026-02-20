@@ -3,23 +3,10 @@
  * Handles slicing audio into tracks, format conversion, and metadata tagging.
  */
 
-const ffmpeg = require('fluent-ffmpeg');
-let ffmpegPath = require('ffmpeg-static');
-let ffprobePath = require('ffprobe-static').path;
+const ffmpeg = require('../utils/ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const NodeID3 = require('node-id3');
-
-// Fix absolute paths for production (asar unpacked)
-if (ffmpegPath.includes('app.asar')) {
-    ffmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
-}
-if (ffprobePath.includes('app.asar')) {
-    ffprobePath = ffprobePath.replace('app.asar', 'app.asar.unpacked');
-}
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 /**
  * Export tracks based on markers.

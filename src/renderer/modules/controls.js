@@ -115,9 +115,12 @@ export function initControls(state) {
             const album = document.getElementById('exportAlbum').value || 'Unknown Album';
             const year = document.getElementById('exportYear').value || '';
 
-            // Gather track names from the track list inputs
+            // Gather track names and artists from the track list inputs
             const trackNameInputs = document.querySelectorAll('.track-title input');
             const trackNames = Array.from(trackNameInputs).map(input => input.value);
+
+            const trackArtistInputs = document.querySelectorAll('.track-artist input');
+            const trackArtists = Array.from(trackArtistInputs).map(input => input.value);
 
             const result = await window.api.exportTracks({
                 inputFile: state.filePath,
@@ -129,6 +132,7 @@ export function initControls(state) {
                 album,
                 year,
                 trackNames,
+                trackArtists,
             });
 
             window.hideLoading();

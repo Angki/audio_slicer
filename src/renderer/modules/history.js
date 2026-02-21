@@ -58,12 +58,10 @@ export function pushHistory(actionDescription = 'Change') {
     // Clear redo
     _redoStack.length = 0;
 
-    console.log(`History pushed: ${actionDescription} (Stack: ${_historyStack.length})`);
 }
 
 export function undo() {
     if (_historyStack.length === 0) {
-        console.log('Nothing to undo');
         return;
     }
 
@@ -80,12 +78,10 @@ export function undo() {
     // Pop history
     const snapshot = _historyStack.pop();
     applySnapshot(snapshot);
-    console.log(`Undone: ${snapshot.desc}`);
 }
 
 export function redo() {
     if (_redoStack.length === 0) {
-        console.log('Nothing to redo');
         return;
     }
 
@@ -102,7 +98,6 @@ export function redo() {
     // Pop redo
     const snapshot = _redoStack.pop();
     applySnapshot(snapshot);
-    console.log(`Redone: ${snapshot.desc}`);
 }
 
 function applySnapshot(snapshot) {

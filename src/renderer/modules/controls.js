@@ -64,9 +64,6 @@ export function initControls(state) {
             }
 
             window.hideLoading();
-
-            // Brief notification
-            console.log('Detection result:', info.join(' | '));
         } catch (err) {
             window.hideLoading();
             console.error('Detection failed:', err);

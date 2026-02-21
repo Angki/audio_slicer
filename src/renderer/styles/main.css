@@ -614,12 +614,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 12px;
 }
 
+.track-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
 .track-row:hover {
   background: var(--bg-tertiary);
+  border-left: 2px solid var(--accent);
+  padding-left: 6px;
 }
 
 .track-row.playing {
   background: var(--accent-glow);
+  border-left: 2px solid var(--accent);
+  padding-left: 6px;
 }
 
 .track-num {

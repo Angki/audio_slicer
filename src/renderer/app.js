@@ -121,7 +121,6 @@ async function loadFile(filePath) {
         state.trackNames = [];
         state.trackArtists = [];
         state.excludedRegions = [];
-        state.discogsInfo = null;
         updateTracklist(state);
 
         // Reset history

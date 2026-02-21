@@ -21,7 +21,10 @@ export function updateTracklist(state) {
     const $badge = document.getElementById('trackCountBadge');
 
     if (state.markers.length === 0) {
-        $trackList.innerHTML = '<div class="empty-state">Run Auto Detect to find tracks</div>';
+        const msg = state.audioInfo
+            ? 'No markers yet — click ⚡ Auto Detect or double-click on the waveform'
+            : 'Drop an audio file to get started';
+        $trackList.innerHTML = `<div class="empty-state">${msg}</div>`;
         $badge.textContent = '0';
         return;
     }

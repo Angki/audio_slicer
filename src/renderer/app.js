@@ -56,10 +56,14 @@ window.formatTime = formatTime;
 
 // ── Format duration helper ─────────────────────────────────────
 function formatDuration(seconds) {
-    const m = Math.floor(seconds / 60);
+    if (!seconds || isNaN(seconds)) return '0:00.00';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
     const ms = Math.floor((seconds % 1) * 100);
-    return `${m}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+    const mStr = h > 0 ? String(m).padStart(2, '0') : String(m);
+    const base = `${mStr}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+    return h > 0 ? `${h}:${base}` : base;
 }
 
 window.formatDuration = formatDuration;

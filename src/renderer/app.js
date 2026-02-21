@@ -291,8 +291,9 @@ function closeProject() {
     $dropZone.classList.remove('hidden');
     $btnCloseProject.style.display = 'none';
 
-    // Destroy waveform
+    // Destroy waveform and re-initialize for next load
     destroyWaveform();
+    initWaveform();
 
     // Clear tracklist and history
     updateTracklist(state);

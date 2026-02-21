@@ -263,6 +263,25 @@ export function initWaveform() {
                 e.preventDefault();
                 wavesurfer.skip(5);
                 break;
+            case 'Delete': {
+                e.preventDefault();
+                // Remove the nearest marker to current playback position
+                const state = window.appState;
+                const curTime = wavesurfer.getCurrentTime();
+                if (state && state.markers.length > 0) {
+                    let closestIdx = 0;
+                    let closestDist = Math.abs(state.markers[0] - curTime);
+                    state.markers.forEach((m, i) => {
+                        const d = Math.abs(m - curTime);
+                        if (d < closestDist) { closestDist = d; closestIdx = i; }
+                    });
+                    if (closestDist < 10) { // Only if within 10s of cursor
+                        window.removeMarker(closestIdx);
+                        syncMarkersToRegions();
+                    }
+                }
+                break;
+            }
         }
     });
 }

@@ -28,6 +28,7 @@ const $fileInfoDisplay = document.getElementById('fileInfoDisplay');
 const $loadingOverlay = document.getElementById('loadingOverlay');
 const $loadingText = document.getElementById('loadingText');
 const $btnOpenFile = document.getElementById('btnOpenFile');
+const $btnCloseProject = document.getElementById('btnCloseProject');
 
 // ── Loading helpers ────────────────────────────────────────────
 function showLoading(text = 'Processing...') {
@@ -125,6 +126,9 @@ async function loadFile(filePath) {
 
         // Reset history
         clearHistory();
+
+        // Show close button now that a project is open
+        $btnCloseProject.style.display = '';
 
         hideLoading();
     } catch (err) {
@@ -242,6 +246,39 @@ $btnOpenFile.addEventListener('click', async () => {
     const filePath = await window.api.openFile();
     if (filePath) loadFile(filePath);
 });
+
+// ── Close Project button ────────────────────────────────────────
+function closeProject() {
+    if (state.isProcessing) return;
+
+    // Reset state
+    state.filePath = null;
+    state.wavPath = null;
+    state.audioInfo = null;
+    state.markers = [];
+    state.trackNames = [];
+    state.trackArtists = [];
+    state.excludedRegions = [];
+    state.discogsInfo = null;
+
+    // Reset header text
+    $fileNameDisplay.textContent = 'No file loaded';
+    $fileInfoDisplay.textContent = '';
+
+    // Hide main content, show drop zone
+    $mainContent.classList.add('hidden');
+    $dropZone.classList.remove('hidden');
+    $btnCloseProject.style.display = 'none';
+
+    // Destroy waveform
+    destroyWaveform();
+
+    // Clear tracklist and history
+    updateTracklist(state);
+    clearHistory();
+}
+
+$btnCloseProject.addEventListener('click', closeProject);
 
 // ── Initialize ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {

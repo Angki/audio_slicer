@@ -90,6 +90,11 @@ window.showToast = showToast;
 async function loadFile(filePath) {
     if (state.isProcessing) return;
 
+    // Re-initialize waveform if it was destroyed (e.g. after Close Project)
+    if (!getWavesurfer()) {
+        initWaveform();
+    }
+
     try {
         showLoading('Loading audio file...');
 
@@ -291,9 +296,8 @@ function closeProject() {
     $dropZone.classList.remove('hidden');
     $btnCloseProject.style.display = 'none';
 
-    // Destroy waveform and re-initialize for next load
+    // Destroy waveform (will be re-initialized lazily on next loadFile)
     destroyWaveform();
-    initWaveform();
 
     // Clear tracklist and history
     updateTracklist(state);

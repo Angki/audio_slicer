@@ -9,6 +9,8 @@ Thumbs.db
 npm-debug.log
 yarn-error.log
 AGENT_CONTEXT.md
+context.md
+SPRINT_TASKS.md
 .agent/
 brain/
 implementation_plan.md

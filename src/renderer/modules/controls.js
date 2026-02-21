@@ -134,8 +134,9 @@ export function initControls(state) {
 
             window.hideLoading();
 
+            window.showToast(`✓ Exported ${result.tracks.length} tracks`, 'success');
             const openFolder = confirm(
-                `Successfully exported ${result.tracks.length} tracks to:\n${result.outputPath}\n\nOpen folder?`
+                `Export complete! ${result.tracks.length} tracks saved to:\n${result.outputPath}\n\nOpen folder?`
             );
             if (openFolder) {
                 window.api.openPath(result.outputPath);

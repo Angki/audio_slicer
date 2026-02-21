@@ -68,6 +68,24 @@ function formatDuration(seconds) {
 
 window.formatDuration = formatDuration;
 
+// ── Toast Notifications ─────────────────────────────────
+function showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = message;
+    container.appendChild(el);
+    const dismiss = () => {
+        el.classList.add('toast-out');
+        el.addEventListener('animationend', () => el.remove(), { once: true });
+    };
+    el.addEventListener('click', dismiss);
+    setTimeout(dismiss, duration);
+}
+
+window.showToast = showToast;
+
 // ── File Loading ───────────────────────────────────────────────
 async function loadFile(filePath) {
     if (state.isProcessing) return;

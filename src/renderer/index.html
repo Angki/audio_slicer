@@ -73,15 +73,20 @@
             <button id="btnZoomOut" class="btn btn-icon" title="Zoom Out">−</button>
             <input id="zoomSlider" type="range" min="1" max="500" value="1" class="zoom-slider">
             <button id="btnZoomIn" class="btn btn-icon" title="Zoom In">+</button>
+            <button id="btnZoomFit" class="btn btn-sm" title="Fit entire audio in view">Fit</button>
             <div class="separator"></div>
             <button id="btnToggleSpectrogram" class="btn btn-sm" title="Toggle Spectrogram">Spectrogram</button>
           </div>
         </div>
-        <div id="waveformContainer" class="waveform-container"></div>
+        <div id="waveformContainer" class="waveform-container">
+          <div id="waveformTooltip" class="waveform-tooltip"></div>
+          <div id="excludeModeBadge" class="exclude-mode-badge" style="display:none"></div>
+        </div>
         <div id="spectrogramContainer" class="spectrogram-container hidden"></div>
         <div id="timelineInfo" class="timeline-info">
           <span id="currentTime">0:00</span>
           <span id="totalTime">0:00</span>
+          <span id="excludedDurationSummary" class="excluded-summary" style="display:none"></span>
         </div>
       </section>
 
@@ -142,9 +147,9 @@
         <div class="panel control-group marker-controls">
           <h3>Markers</h3>
           <div class="marker-actions">
-            <button id="btnAddMarker" class="btn btn-sm" title="Add a marker at the current playback position (M)">+ Add
-              at cursor</button>
-            <button id="btnClearMarkers" class="btn btn-sm btn-danger" title="Remove all markers">Clear all</button>
+            <button id="btnAddMarker" class="btn btn-sm" title="Add a marker at the current playback position (M)">+ Add at cursor</button>
+            <button id="btnClearMarkers" class="btn btn-sm btn-danger" title="Remove all markers">Clear markers</button>
+            <button id="btnClearExclusions" class="btn btn-sm btn-danger" title="Remove all excluded regions (E to toggle mode)">Clear exclusions</button>
           </div>
           <div id="markerCount" class="marker-count">0 markers · 1 track</div>
         </div>

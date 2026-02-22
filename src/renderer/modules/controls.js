@@ -94,6 +94,14 @@ export function initControls(state) {
         }
     });
 
+    // ── Clear All Exclusions ──
+    document.getElementById('btnClearExclusions').addEventListener('click', () => {
+        if (!state.excludedRegions || state.excludedRegions.length === 0) return;
+        if (confirm(`Clear all ${state.excludedRegions.length} excluded region(s)?`)) {
+            window.clearAllExclusions();
+        }
+    });
+
     // ── Export ──
     document.getElementById('btnExport').addEventListener('click', async () => {
         if (!state.filePath || state.markers.length === 0) {

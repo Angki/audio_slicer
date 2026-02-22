@@ -93,6 +93,17 @@ function attachTracklistEvents($trackList, segments) {
         });
     });
 
+    // Click track row → seek waveform to track start (ignore clicks on interactive elements)
+    $trackList.querySelectorAll('.track-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            const interactive = e.target.closest('button, input');
+            if (interactive) return;
+            const idx = parseInt(row.dataset.index);
+            if (isNaN(idx) || !segments[idx]) return;
+            if (window.seekTo) window.seekTo(segments[idx].start);
+        });
+    });
+
     // Attach remove marker events
     $trackList.querySelectorAll('.track-remove-btn').forEach(btn => {
         btn.addEventListener('click', () => {

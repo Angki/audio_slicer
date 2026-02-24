@@ -36,7 +36,7 @@ _File ini di-exclude dari git. Hanya untuk referensi lokal._
 - [x] `fix: clear excluded regions on new file load` — Reset saat file baru
 - [x] `feat: Home/End shortcut to seek start/end` — Home/End key
 - [x] `feat: sync playback position to tracklist highlight` — Highlight row sesuai posisi play
-- [ ] `feat: add waveform overview/minimap` — _Deferred: WaveSurfer 7 MinimapPlugin API belum stabil_
+- [x] `feat: add waveform overview/minimap` — _Implemented using local minimap.esm.js_
 
 ---
 

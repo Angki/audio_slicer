@@ -3,6 +3,7 @@ import WaveSurfer from '../lib/wavesurfer.esm.js';
 import RegionsPlugin from '../lib/regions.esm.js';
 import SpectrogramPlugin from '../lib/spectrogram.esm.js';
 import TimelinePlugin from '../lib/timeline.esm.js';
+import MinimapPlugin from '../lib/minimap.esm.js';
 
 let wavesurfer = null;
 let regionsPlugin = null;
@@ -51,7 +52,6 @@ export function initWaveform() {
         plugins: [
             regionsPlugin,
             TimelinePlugin.create({
-                container: container,
                 height: 20,
                 timeInterval: 10,
                 primaryLabelInterval: 30,
@@ -59,6 +59,12 @@ export function initWaveform() {
                     fontSize: '10px',
                     color: '#55556a',
                 },
+            }),
+            MinimapPlugin.create({
+                height: 40,
+                waveColor: '#4a4a6a',
+                progressColor: '#7c5cfc',
+                overlayColor: 'rgba(124, 92, 252, 0.2)'
             }),
         ],
     });
@@ -216,8 +222,13 @@ export function initWaveform() {
     if ($tooltip) {
         $waveformContainer.addEventListener('mousemove', (e) => {
             if (!wavesurfer || !wavesurfer.getDuration()) return;
-            const rect = $waveformContainer.getBoundingClientRect();
-            const relX = (e.clientX - rect.left) / rect.width;
+            const scrollWrapper = wavesurfer.getWrapper().parentElement;
+            const rect = scrollWrapper.getBoundingClientRect();
+            
+            // Calculate absolute X position within the scrolled content
+            const xOnWaveform = (e.clientX - rect.left) + scrollWrapper.scrollLeft;
+            const relX = Math.max(0, Math.min(1, xOnWaveform / scrollWrapper.scrollWidth));
+            
             const time = relX * wavesurfer.getDuration();
             $tooltip.textContent = window.formatTime(time);
             $tooltip.style.left = `${e.clientX - rect.left + 10}px`;

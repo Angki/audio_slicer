@@ -40,68 +40,68 @@ _File ini di-exclude dari git. Hanya untuk referensi lokal._
 
 ---
 
-## 🔲 Day 3 — Smart Import & Parser (24 Feb)
+## ✅ Day 3 — Smart Import & Parser (24 Feb) — SELESAI
 
-- [ ] `feat: parser support bracket timestamp format` — `[0:00] Track Name`
-- [ ] `feat: parser support trailing duration format` — `Track 01 - Name - 3:45`
-- [ ] `fix: strip BOM from pasted text` — Bersihkan BOM di clipboard
-- [ ] `feat: show track count preview before import` — Tampilkan jumlah track sebelum apply
-- [ ] `feat: add append-mode option in Smart Import` — Tambahkan ke marker (bukan ganti)
-- [ ] `feat: warn if imported tracks exceed audio duration` — Warning jika melebihi durasi
-- [ ] `fix: trim whitespace from imported track names` — Trim whitespace nama track
-- [ ] `feat: Ctrl+I shortcut for Smart Import` — Shortcut buka Smart Import
-- [ ] `feat: copy tracklist to clipboard` — Tombol copy tracklist
-- [ ] `feat: drag txt/cue file into Smart Import` — Drag file txt/cue
-- [ ] `feat: basic CUE sheet parser` — Parser CUE sederhana
-- [ ] `fix: improve Smart Import error messages` — Pesan error lebih deskriptif
-- [ ] `feat: Smart Import history / recent imports` — History 5 import terakhir
-- [ ] `style: fix Smart Import modal responsive layout` — Responsive layout modal
-- [ ] `feat: loading spinner on Parse button` — Spinner saat parsing
-- [ ] `feat: persist Smart Import textarea content` — Simpan isi textarea ke localStorage
-
----
-
-## 🔲 Day 4 — Export Engine & Backend (25 Feb)
-
-- [ ] `feat: per-track export progress via IPC` — Progress per-track via IPC event
-- [ ] `feat: export progress bar UI` — Progress bar di UI saat export
-- [ ] `feat: show ETA during export` — Estimasi waktu export
-- [ ] `feat: copy output path to clipboard` — Salin path output
-- [ ] `fix: track artist not passed correctly to export` — Fix track artist bug
-- [ ] `feat: export option split by excluded regions` — Export per exclusion region
-- [ ] `feat: validate output dir writable before export` — Validasi output path sebelum mulai
-- [ ] `feat: auto-retry on single track export failure` — Retry otomatis jika 1 track gagal
-- [ ] `feat: write export log to file` — Log export ke file
-- [ ] `feat: optional audio normalization on export` — Normalisasi volume
-- [ ] `fix: write genre and comment tags for FLAC` — Fix genre/comment di FLAC
-- [ ] `feat: open individual exported track from result` — Buka track dari hasil export
-- [ ] `feat: show total export duration summary` — Total durasi yang di-export
-- [ ] `feat: support AlbumArtist tag in export` — Tag Album Artist
-- [ ] `feat: add output sample rate selector` — Pilihan sample rate output
-- [ ] `feat: embed cover art from local image file` — Embed cover art dari file gambar
-- [ ] `feat: persist export settings to localStorage` — Simpan setting export
+- [x] `feat: parser support bracket timestamp format`
+- [x] `feat: parser support trailing duration format`
+- [x] `fix: strip BOM from pasted text`
+- [x] `feat: show track count preview before import`
+- [x] `feat: add append-mode option in Smart Import`
+- [x] `feat: warn if imported tracks exceed audio duration`
+- [x] `fix: trim whitespace from imported track names`
+- [x] `feat: Ctrl+I shortcut for Smart Import`
+- [x] `feat: copy tracklist to clipboard`
+- [x] `feat: drag txt/cue file into Smart Import`
+- [x] `feat: basic CUE sheet parser`
+- [x] `fix: improve Smart Import error messages`
+- [x] `feat: Smart Import history / recent imports`
+- [x] `style: fix Smart Import modal responsive layout`
+- [x] `feat: loading spinner on Parse button`
+- [x] `feat: persist Smart Import textarea content`
 
 ---
 
-## 🔲 Day 5 — Settings, Packaging & QA (26 Feb)
+## ✅ Day 4 — Export Engine & Backend (25 Feb) — SELESAI
 
-- [ ] `feat: add Settings panel` — Halaman/panel Settings
-- [ ] `feat: setting for default export format` — Default format export
-- [ ] `feat: setting for default output directory` — Default direktori output
-- [ ] `feat: setting for waveform color theme` — Tema warna waveform
-- [ ] `feat: persist settings with electron-store` — Simpan ke electron-store
-- [ ] `feat: add About dialog` — Halaman About (versi, lisensi)
-- [ ] `feat: keyboard shortcut reference` — Referensi keyboard shortcut
-- [ ] `feat: add electron-updater stub` — Stub auto-updater
-- [ ] `docs: update README with screenshots` — README lengkap dengan screenshot
-- [ ] `test: manual QA full flow WAV` — QA flow lengkap drag → detect → export
-- [ ] `test: manual QA CUE import` — QA Smart Import dari CUE file
-- [ ] `test: manual QA excluded regions export` — QA excluded regions export
-- [ ] `fix: [QA] bug dari test flow` — Bug dari QA #1
-- [ ] `fix: [QA] bug dari CUE import` — Bug dari QA #2
-- [ ] `fix: [QA] excluded region edge case` — Bug dari QA #3
-- [ ] `feat: set app icon` — Icon .ico untuk Electron
-- [ ] `build: configure Windows installer` — Konfigurasi electron-builder
-- [ ] `build: first successful Windows build` — Build pertama
-- [ ] `release: v0.1.0` — Tag release
-- [ ] `docs: update CHANGELOG for v0.1.0` — Update CHANGELOG
+- [x] `feat: per-track export progress via IPC`
+- [x] `feat: export progress bar UI`
+- [x] `feat: show ETA during export`
+- [x] `feat: copy output path to clipboard`
+- [x] `fix: track artist not passed correctly to export`
+- [x] `feat: export option split by excluded regions`
+- [x] `feat: validate output dir writable before export`
+- [x] `feat: auto-retry on single track export failure`
+- [x] `feat: write export log to file`
+- [x] `feat: optional audio normalization on export`
+- [x] `fix: write genre and comment tags for FLAC`
+- [x] `feat: open individual exported track from result`
+- [x] `feat: show total export duration summary`
+- [x] `feat: support AlbumArtist tag in export`
+- [x] `feat: add output sample rate selector`
+- [x] `feat: embed cover art from local image file`
+- [x] `feat: persist export settings to localStorage`
+
+---
+
+## ✅ Day 5 — Settings, Packaging & QA (26 Feb) — SELESAI
+
+- [x] `feat: add Settings panel`
+- [x] `feat: setting for default export format`
+- [x] `feat: setting for default output directory`
+- [x] `feat: setting for waveform color theme`
+- [x] `feat: persist settings with electron-store`
+- [x] `feat: add About dialog`
+- [x] `feat: keyboard shortcut reference`
+- [x] `feat: add electron-updater stub`
+- [x] `docs: update README with screenshots`
+- [x] `test: manual QA full flow WAV`
+- [x] `test: manual QA CUE import`
+- [x] `test: manual QA excluded regions export`
+- [x] `fix: [QA] bug dari test flow`
+- [x] `fix: [QA] bug dari CUE import`
+- [x] `fix: [QA] excluded region edge case`
+- [x] `feat: set app icon`
+- [x] `build: configure Windows installer`
+- [x] `build: first successful Windows build`
+- [x] `release: v0.1.0`
+- [x] `docs: update CHANGELOG for v0.1.0`

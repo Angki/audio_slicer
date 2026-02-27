@@ -22,10 +22,10 @@ A smart, Electron-based desktop application for automatically detecting, slicing
 - 🎨 **Customizable Theming**: WaveSurfer engine supports sleek UI themes (Purple, Ocean Blue, Neon Green) and preferences are synced with `electron-store`.
 - ⌨️ **Keyboard Shortcuts**: Fluent editing workflow. Space to play/pause, M to place marker, E to toggle exclude mode, and Ctrl+scroll to zoom.
 
-## Tech Stack
-- Electron & Node.js
-- WaveSurfer.js + Minimap/Timeline/Regions
-- Node-fluent-ffmpeg + native FFmpeg pre-bundled
-- Node-ID3 (tags backup mechanism)
+## Quickstart & Development
+
+1. `npm install`
+2. `npm start` (Runs the Electron application in dev mode)
+3. `npm run build` (Compiles the application to `dist/win-unpacked` and generates the Windows installer). Note that `postbuild` will automatically push the standalone version to your `D:\PC Sync\built` directory.
 
 > Note: For development, FFmpeg binaries are automatically unpacked by electron-builder.

@@ -20,3 +20,4 @@ All notable changes to this project will be documented in this file.
 - **Keyboard Shortcuts**: Space (Play/Pause), M (Mark), E (Exclude Region Mode), Ctrl+Scroll (Zoom).
 - **Auto-updater configuration**: Built-in stub for OTA distribution via `electron-updater`.
 - **Packaging Pipeline**: Configured `electron-builder` for production setup with native dependencies packaged and preserved.
+- **Auto-Sync Scripts**: Node post-build script configured to mirror the `win-unpacked` output to an external synchronisation directory `D:\PC Sync\built\autoslice` automatically whenever a new build is run.

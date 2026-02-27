@@ -105,3 +105,52 @@ _File ini di-exclude dari git. Hanya untuk referensi lokal._
 - [x] `build: first successful Windows build`
 - [x] `release: v0.1.0`
 - [x] `docs: update CHANGELOG for v0.1.0`
+
+---
+## 🚀 v1.0.0: The Next 10-Day Sprint (Batch Processing & Advanced Audio Features)
+
+Berikut adalah ide terstruktur untuk sprint pengembangan AutoSlice selanjutnya (versi 1.0.0), yang difokuskan pada pemrosesan batch, kualitas audio tingkat lanjut, dan automasi.
+
+### 📅 Week 1: Core Audio Advancements & Integrations
+**Day 6 — Percission Audio & Navigation**
+- [ ] `feat: snap to zero-crossing` — secara otomatis menggeser marker yang diletakkan pengguna ke titik zero-crossing terdekat pada buffer audio untuk mencegah *clipping/clicking* saat diekspor.
+- [ ] `feat: zoom-to-marker` — klik ganda pada area marker untuk langsung melakukan *deep zoom* ke titik pemotongan.
+- [ ] `perf: large file optimization` — optimasi rendering WaveSurfer untuk file yang durasinya sangat panjang (>2 jam).
+
+**Day 7 — Excluded Region Crossfading & Transcoding**
+- [ ] `feat: crossfade generator for excluded regions` — alih-alih melakukan *hard-cut* menggunakan `atrim`, terapkan *smooth crossfade* (10-50ms) menggunakan filter FFmpeg `afade` / `acrossfade` untuk menyembunyikan transisi yang dipotong.
+- [ ] `feat: transcode-only / format-shift mode` — mode baru di UI yang memungkinkan pengguna mengekspor keseluruhan file ke format berbeda (misal: FLAC ke MP3 320kbps plus *Loudness Normalization*) tanpa memotong (*slicing*).
+
+**Day 8 — Advanced Metadata & API Integrations**
+- [ ] `feat: MusicBrainz API integration` — tambahkan opsi pencarian database dari MusicBrainz sebagai alternatif yang terkadang lebih akurat daripada Discogs untuk rilis spesifik.
+- [ ] `feat: Auto-fetch cover art` — API untuk mengambil *cover art* spesifik secara otomatis dari Discogs/MusicBrainz dan memasukkannya ke kolom gambar cover.
+
+**Day 9 — BPM Detection for DJ Tagging**
+- [ ] `feat: auto-bpm calculation module` — hitung estimasi Tempo/BPM setiap *slice* menggunakan algoritma lokal atau `web-audio-beat-detector`.
+- [ ] `feat: burn BPM tag to ID3` — integrasi hasil perhitungan BPM ke argumen FFmpeg/NodeId3 untuk di-*burn* ke meta-tag MP3/FLAC saat diekspor.
+
+**Day 10 — Save/Load Projects & Session Persistence**
+- [ ] `feat: save .slice project files` — buat opsi "Save Project" untuk menyimpan *path* file audio, posisi marker, metadata track, dan region yang di-*exclude* ke format JSON `.slice`.
+- [ ] `feat: load .slice project files` — izinkan drag-n-drop file proyek `.slice` untuk melanjutkan pekerjaan yang belum selesai.
+
+---
+### 📅 Week 2: Batch Operations & Deep Automations
+**Day 11 — The Batch Processing UI**
+- [ ] `feat: bulk folder import mode` — tambahkan tab/tombol baru untuk "Process Folder" yang memungkinkan _import_ massal file-file panjang (mis. 10 *side* piringan hitam sekaligus).
+- [ ] `feat: batch queue UI & state` — buat *grid layout* (tabel) yang menampilkan status dari seluruh file yang mengantri (*Pending*, *Detecting*, *Exporting*, *Done*).
+
+**Day 12 — Headless Silence Detection Engine**
+- [ ] `feat: recursive silence detection` — buat mesin *headless* (tanpa WaveSurfer) yang menggunakan `ffmpeg silendedetect` di latar belakang untuk men-*scan* setiap file di *Batch Queue* berdasarkan parameter Threshold yang disetel sebelumnya secara berurutan.
+- [ ] `feat: batch export orchestration` — integrasikan pemanggilan `ExportService.exportTracks` agar berjalan secara otomatis mengikuti hasil deteksi.
+
+**Day 13 — Fuzzy Logic Tracklist Mapping (The AI Touch)**
+- [ ] `feat: fuzzy length ratio matcher` — saat meng-import dari CUE/Teks ke sejumlah marker otomatis, sesuaikan secara proporsional posisi penanda jika terjadi ketidakkonsistenan durasi dengan rasio kecocokan jarak.
+- [ ] `feat: OCR / image-to-text integration` — izinkan pengguna untuk *paste* gambar sampul belakang kaset/vinyl, lalu terjemahkan teksnya menggunakan `tesseract.js` lokal menjadi teks daftar lagu.
+
+**Day 14 — i18n Translation & Accessibility**
+- [ ] `i18n: system integration` — susun *mapping* kamus bahasa (ID, EN).
+- [ ] `i18n: context menus and UI switch` — tambahkan *dropdown* bahasa di menu pengaturan, otomatis terapkan di seluruh UI tanpa perlu *reload*.
+
+**Day 15 — Final v1.0.0 Quality Tests & Automation**
+- [ ] `test: E2E batch folder testing` — pastikan komputer tetap responsif saat mengonversi/memotong berjam-jam file audio di *background*.
+- [ ] `release: build and ship v1.0.0 executables` — pembaruan mayor v1.0.0 dengan fitur Batch yang utuh.

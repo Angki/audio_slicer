@@ -9,6 +9,7 @@ import { initTracklist, updateTracklist } from './modules/tracklist.js';
 import { initDiscogs } from './modules/discogs-ui.js';
 import { initSmartImport } from './modules/smart-import.js';
 import { initHistory, pushHistory, clearHistory } from './modules/history.js';
+import { initSettings } from './modules/settings.js';
 
 // ── App State ──────────────────────────────────────────────────
 import { state } from './state/store.js';
@@ -308,10 +309,21 @@ $btnCloseProject.addEventListener('click', closeProject);
 
 // ── Initialize ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    initSettings().catch(console.error);
     initWaveform();
     initControls(state);
     initTracklist(state);
     initDiscogs(state);
     initSmartImport(state);
     initHistory(state);
+});
+
+// ── Global Keyboard Shortcuts ─────────────────────────────────
+document.addEventListener('keydown', (e) => {
+    // Ctrl+I for Smart Import
+    if (e.ctrlKey && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        const btnOpen = document.getElementById('btnSmartImport');
+        if (btnOpen) btnOpen.click();
+    }
 });

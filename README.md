@@ -1,52 +1,31 @@
-# AutoSlice
+# AutoSlice ✂️🎵
 
-AutoSlice is a powerful desktop application for automatically slicing audio files based on silence detection. Ideal for digitizing vinyl, cassette tapes, or splitting long recordings into individual tracks.
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)]()
+[![Electron](https://img.shields.io/badge/Electron-Desktop-blueviolet)](https://www.electronjs.org/)
+
+A smart, Electron-based desktop application for automatically detecting, slicing, and exporting individual tracks from long audio files (full albums, vinyl rips, live sets). 
+
+> **Stop manually slicing vinyl sides!** AutoSlice uses RMS analysis to automatically find the silence between tracks. 
 
 ## Features
 
-- **Automated Slicing**: Detects gaps in audio using adjustable silence threshold and duration.
-- **Waveform Visualization**: Interactive waveform display with zoom and spectrogram support.
-- **Discogs Integration**: Search for release metadata and automatically match track names to detected segments.
-- **Flexible Export**: Export slices as WAV, FLAC, or MP3 with metadata tagging.
-- **Manual Editing**: Fine-tune markers manually with drag-and-drop precision.
+- 🔊 **Auto Silence Detection**: Uses threshold and minimum duration parameters to automatically identify track gaps.
+- 🎛️ **Advanced Export Engine**:
+  - Export to FLAC, WAV, or MP3 (320kbps).
+  - Apply Audio Normalization (`loudnorm`).
+  - Resample output frequencies (Original, 44.1kHz, 48kHz).
+  - Advanced Metadata mapping (Artist, Album, Year, AlbumArtist, Genre, Comment).
+  - Embed local cover art into tracks directly via FFmpeg.
+- ⛔ **Exclude Regions**: Visually drag across applause, skips, or unwanted sections to omit them from your exported files seamlessly.
+- 📝 **Smart Import**: Paste any tracklist text, YouTube timestamps, or CUE sheets, and map them to detected regions instantly.
+- 🌐 **Discogs Integration**: Auto-fetch album metadata and tracklists via Discogs Release ID.
+- 🎨 **Customizable Theming**: WaveSurfer engine supports sleek UI themes (Purple, Ocean Blue, Neon Green) and preferences are synced with `electron-store`.
+- ⌨️ **Keyboard Shortcuts**: Fluent editing workflow. Space to play/pause, M to place marker, E to toggle exclude mode, and Ctrl+scroll to zoom.
 
-## Installation
+## Tech Stack
+- Electron & Node.js
+- WaveSurfer.js + Minimap/Timeline/Regions
+- Node-fluent-ffmpeg + native FFmpeg pre-bundled
+- Node-ID3 (tags backup mechanism)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Angki/audio_slicer.git
-   cd audio_slicer
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-## Usage
-
-1. Start the application:
-   ```bash
-   npm start
-   # or
-   npx electron .
-   ```
-
-2. Drag and drop an audio file into the window.
-3. Click "⚡ Auto Detect" to find gaps.
-4. Verify markers on the waveform.
-5. (Optional) Search Discogs for track names.
-6. Click "Export Tracks" to save your files.
-
-## Project Structure
-
-- `src/main`: Electron main process and backend services.
-  - `services/`: Core logic (Audio detection, Exporting, Discogs API).
-  - `utils/`: Shared generic utilities (e.g. FFmpeg pathing).
-- `src/renderer`: Frontend UI and logic.
-  - `state/`: Global frontend state manager (`store.js`).
-  - `modules/`: Decoupled UI components (waveform, tracklist, controls, history, etc.).
-
-## License
-
-MIT
+> Note: For development, FFmpeg binaries are automatically unpacked by electron-builder.

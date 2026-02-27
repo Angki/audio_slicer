@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('api', {
     // ── File dialogs ──
     openFile: () => ipcRenderer.invoke('dialog:openFile'),
     selectExportDir: () => ipcRenderer.invoke('dialog:selectExportDir'),
+    openImage: () => ipcRenderer.invoke('dialog:openImage'),
 
     // ── Audio ──
     getAudioInfo: (filePath) => ipcRenderer.invoke('audio:getInfo', filePath),
@@ -13,6 +14,16 @@ contextBridge.exposeInMainWorld('api', {
 
     // ── Export ──
     exportTracks: (options) => ipcRenderer.invoke('export:tracks', options),
+    onExportProgress: (callback) => ipcRenderer.on('export:progress', (event, data) => callback(data)),
+    onExportInit: (callback) => ipcRenderer.on('export:init', (event, data) => callback(data)),
+    removeExportListeners: () => {
+        ipcRenderer.removeAllListeners('export:progress');
+        ipcRenderer.removeAllListeners('export:init');
+    },
+
+    // ── Settings ──
+    storeGet: (key, defaultValue) => ipcRenderer.invoke('store:get', key, defaultValue),
+    storeSet: (key, value) => ipcRenderer.invoke('store:set', key, value),
 
     // ── Discogs ──
     discogsSearch: (query) => ipcRenderer.invoke('discogs:search', query),

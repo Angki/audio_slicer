@@ -3,6 +3,8 @@ const path = require('path');
 const AudioService = require('./services/AudioService');
 const ExportService = require('./services/ExportService');
 const DiscogsService = require('./services/DiscogsService');
+const StoreService = require('./services/StoreService');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 
@@ -27,7 +29,10 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  autoUpdater.checkForUpdatesAndNotify().catch(console.error);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
@@ -52,10 +57,26 @@ ipcMain.handle('dialog:openFile', async () => {
   return result.filePaths[0];
 });
 
+ipcMain.handle('store:get', (_event, key, defaultValue) => StoreService.getStoreValue(key, defaultValue));
+ipcMain.handle('store:set', (_event, key, value) => StoreService.setStoreValue(key, value));
+
 ipcMain.handle('dialog:selectExportDir', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Select Export Directory',
     properties: ['openDirectory', 'createDirectory'],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('dialog:openImage', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Cover Art',
+    filters: [
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] },
+      { name: 'All Files', extensions: ['*'] }
+    ],
+    properties: ['openFile']
   });
   if (result.canceled || result.filePaths.length === 0) return null;
   return result.filePaths[0];
@@ -99,7 +120,7 @@ ipcMain.handle('audio:analyzeRMS', async (_event, filePath, windowMs) => {
 
 ipcMain.handle('export:tracks', async (_event, options) => {
   try {
-    return await ExportService.exportTracks(options);
+    return await ExportService.exportTracks(options, _event);
   } catch (err) {
     console.error('export:tracks error:', err);
     throw err;

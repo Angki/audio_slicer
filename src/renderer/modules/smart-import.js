@@ -4,6 +4,8 @@
  */
 
 let _state = null;
+const HISTORY_KEY = 'autoslice_smart_import_history';
+const MAX_HISTORY = 5;
 
 export function initSmartImport(state) {
     _state = state;
@@ -17,56 +19,210 @@ export function initSmartImport(state) {
     const $textarea = document.getElementById('smartImportText');
     const $preview = document.getElementById('smartImportPreview');
     const $checkReplace = document.getElementById('checkSmartImportReplace');
+    const $checkAppend = document.getElementById('checkSmartImportAppend');
+    const $spinner = $btnParse ? $btnParse.querySelector('.spinner') : null;
+    const $parseText = $btnParse ? $btnParse.querySelector('.btn-text') : null;
+    const $trackCount = document.getElementById('smartImportTrackCount');
+    const $historySelect = document.getElementById('smartImportHistory');
+    const $btnCopy = document.getElementById('btnCopyTracklist');
 
     let _parsedTracks = [];
+
+    // Load History
+    const loadHistory = () => {
+        try {
+            const hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            if (hist.length > 0 && $historySelect) {
+                $historySelect.innerHTML = '<option value="">Recent Imports...</option>' +
+                    hist.map((h, i) => `<option value="${i}">${h.date} - ${h.tracks} tracks</option>`).join('');
+                $historySelect.style.display = 'block';
+            } else if ($historySelect) {
+                $historySelect.style.display = 'none';
+            }
+        } catch (e) { console.error('History load error', e); }
+    };
+
+    const saveHistory = (text, numTracks) => {
+        if (!text.trim() || numTracks === 0) return;
+        try {
+            let hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+
+            // Check if exact same text is already first, don't duplicate
+            if (hist.length > 0 && hist[0].text === text) return;
+
+            hist.unshift({ date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), text, tracks: numTracks });
+            if (hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+            loadHistory();
+        } catch (e) { }
+    };
+
+    if ($historySelect) {
+        $historySelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === '') return;
+            try {
+                const hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+                if (hist[val]) {
+                    $textarea.value = hist[val].text;
+                    if ($btnParse) $btnParse.click();
+                }
+            } catch (e) { }
+            $historySelect.value = '';
+        });
+    }
+
+    // Copy to clipboard
+    if ($btnCopy) {
+        $btnCopy.addEventListener('click', () => {
+            if (_parsedTracks.length === 0) {
+                if (window.showToast) window.showToast('No tracks parsed yet', 'error');
+                return;
+            }
+            const txt = _parsedTracks.map(t => `${t.timeStr} ${t.artist ? t.artist + ' - ' : ''}${t.title}`).join('\n');
+            navigator.clipboard.writeText(txt).then(() => {
+                if (window.showToast) window.showToast('Tracklist copied to clipboard', 'success');
+            });
+        });
+    }
+
+    // Drag & Drop files into textarea
+    if ($textarea) {
+        $textarea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            $textarea.style.border = '2px dashed var(--accent)';
+        });
+        $textarea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            $textarea.style.border = '';
+        });
+        $textarea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            $textarea.style.border = '';
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.cue')) {
+                    try {
+                        const text = await file.text();
+                        // Strip BOM
+                        $textarea.value = text.replace(/^\uFEFF/, '');
+                        if ($btnParse) $btnParse.click();
+                        if (window.showToast) window.showToast(`Loaded ${file.name}`, 'success');
+                    } catch (err) {
+                        alert('Could not read file: ' + err.message);
+                    }
+                } else {
+                    if (window.showToast) window.showToast('Only .txt and .cue files are supported.', 'error');
+                }
+            }
+        });
+    }
 
     // Open Modal
     if ($btnOpen) {
         $btnOpen.addEventListener('click', () => {
-            $textarea.value = '';
+            $textarea.value = localStorage.getItem('smart_import_draft') || '';
             _parsedTracks = [];
+            loadHistory();
             renderPreview([]);
-            $btnApply.disabled = true;
-            $modal.classList.remove('hidden');
-            $textarea.focus();
+
+            if ($btnApply) $btnApply.disabled = true;
+            if ($trackCount) $trackCount.style.display = 'none';
+            if ($modal) $modal.classList.remove('hidden');
+            if ($textarea) $textarea.focus();
+
+            if ($textarea.value.trim() && $btnParse) {
+                $btnParse.click();
+            }
+        });
+    }
+
+    // Save draft on input
+    if ($textarea) {
+        $textarea.addEventListener('input', () => {
+            localStorage.setItem('smart_import_draft', $textarea.value);
         });
     }
 
     // Close Modal
     const closeModal = () => {
-        $modal.classList.add('hidden');
+        if ($modal) $modal.classList.add('hidden');
     };
-    $btnClose.addEventListener('click', closeModal);
-    $btnCancel.addEventListener('click', closeModal);
+    if ($btnClose) $btnClose.addEventListener('click', closeModal);
+    if ($btnCancel) $btnCancel.addEventListener('click', closeModal);
 
     // Parse
     if ($btnParse) {
         $btnParse.addEventListener('click', () => {
-            const text = $textarea.value;
-            _parsedTracks = parseTracklist(text);
-            renderPreview(_parsedTracks);
-            $btnApply.disabled = _parsedTracks.length === 0;
+            let text = $textarea.value.replace(/^\uFEFF/, ''); // Strip BOM
+            if (!text.trim()) {
+                renderPreview([]);
+                if ($trackCount) $trackCount.style.display = 'none';
+                if ($btnApply) $btnApply.disabled = true;
+                return;
+            }
+
+            if ($spinner) $spinner.classList.remove('hidden');
+            if ($parseText) $parseText.textContent = 'Parsing...';
+            $btnParse.disabled = true;
+
+            // Timeout to allow UI layout frame
+            setTimeout(() => {
+                _parsedTracks = parseTracklist(text);
+                renderPreview(_parsedTracks);
+
+                if ($btnApply) $btnApply.disabled = _parsedTracks.length === 0;
+
+                if ($spinner) $spinner.classList.add('hidden');
+                if ($parseText) $parseText.textContent = 'Parse';
+                $btnParse.disabled = false;
+
+                if ($trackCount) {
+                    $trackCount.textContent = `${_parsedTracks.length} track${_parsedTracks.length !== 1 ? 's' : ''}`;
+                    $trackCount.style.display = 'inline';
+                }
+
+                // Warn duration
+                if (_state && _state.audioInfo && _state.audioInfo.duration > 0) {
+                    const lastTrack = _parsedTracks[_parsedTracks.length - 1];
+                    if (lastTrack && lastTrack.time > _state.audioInfo.duration) {
+                        if (window.showToast) window.showToast('Warning: Imported track time exceeds audio duration!', 'error');
+                    }
+                }
+
+            }, 50); // fake delay
         });
     }
 
     // Apply
-    $btnApply.addEventListener('click', () => {
-        const replace = $checkReplace.checked;
-        applyTracks(_parsedTracks, replace);
-        closeModal();
-    });
+    if ($btnApply) {
+        $btnApply.addEventListener('click', () => {
+            const replace = $checkReplace ? $checkReplace.checked : true;
+            applyTracks(_parsedTracks, replace);
+            saveHistory($textarea.value, _parsedTracks.length);
+            localStorage.setItem('smart_import_draft', ''); // Clear draft on apply
+            closeModal();
+            if (window.showToast) window.showToast(`Imported ${_parsedTracks.length} tracks`, 'success');
+        });
+    }
 
     function renderPreview(tracks) {
         if (tracks.length === 0) {
-            $preview.innerHTML = '<div class="empty-state">No tracks found or parsed</div>';
+            $preview.innerHTML = '<div class="empty-state">No tracks found or parsed. Make sure you have valid timestamps.</div>';
             return;
         }
 
         $preview.innerHTML = tracks.map(t => {
-            const timeClass = (t.time !== null && !isNaN(t.time)) ? 'preview-time' : 'preview-time text-muted';
+            let timeClass = (t.time !== null && !isNaN(t.time)) ? 'preview-time' : 'preview-time text-muted';
+            // highlight if exceeding audio dur
+            let isExceeded = false;
+            if (_state && _state.audioInfo && t.time > _state.audioInfo.duration) {
+                timeClass += ' preview-exceeds';
+                isExceeded = true;
+            }
             return `
             <div class="preview-row">
-                <span class="${timeClass}">${t.timeStr || '-'}</span>
+                <span class="${timeClass}" style="${isExceeded ? 'color: var(--danger);' : ''}">${t.timeStr || '-'}</span>
                 <span class="preview-artist" title="${escapeHtml(t.artist || '')}">${escapeHtml(t.artist || '')}</span>
                 <span class="preview-title" title="${escapeHtml(t.title || '')}">${escapeHtml(t.title || '')}</span>
             </div>
@@ -80,11 +236,16 @@ export function initSmartImport(state) {
 export function parseTracklist(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
 
+    // Check if it's a CUE sheet
+    if (lines.some(l => l.trim().startsWith('FILE ') || l.trim().startsWith('TRACK ') || l.trim().startsWith('INDEX 01'))) {
+        return parseCueSheet(lines);
+    }
+
     // Regexes
     const durationRegex = /\((\d{1,2}:\d{2}(?::\d{2})?)\)/; // (MM:SS) or (HH:MM:SS)
-    const timeRegex = /(\d{1,2}:\d{2}(?::\d{2})?)/;        // MM:SS or HH:MM:SS (Start time assumption)
+    const timeRegex = /\[?(\d{1,2}:\d{2}(?::\d{2})?)\]?/;        // MM:SS or [MM:SS] (Start time)
+    const trailingDurationRegex = /[-–—|]\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*$/; // Track - Name - 3:45
 
-    // First pass: Parse raw data
     let hasDurations = false;
 
     const parsedLines = lines.map(line => {
@@ -100,20 +261,29 @@ export function parseTracklist(text) {
         let seconds = null;
         let isDuration = false;
 
-        // Check for Duration in parens -> (3:45)
-        const durMatch = content.match(durationRegex);
-        if (durMatch) {
-            timeStr = durMatch[1];
+        // Check trailing duration
+        const trailMatch = content.match(trailingDurationRegex);
+        if (trailMatch) {
+            timeStr = trailMatch[1];
             isDuration = true;
-            hasDurations = true; // Flag explicit duration mode
-            content = content.replace(durMatch[0], '').trim();
-        } else {
-            // Check for Time Pattern -> 0:00
-            const timeMatch = content.match(timeRegex);
-            if (timeMatch) {
-                timeStr = timeMatch[1];
-                // If 0:00 is found, it strongly suggests Start Time mode, unless we are in mixed mode?
-                content = content.replace(timeStr, '').trim();
+            hasDurations = true;
+            content = content.replace(trailMatch[0], '').trim();
+        }
+        else {
+            // Check for Duration in parens
+            const durMatch = content.match(durationRegex);
+            if (durMatch) {
+                timeStr = durMatch[1];
+                isDuration = true;
+                hasDurations = true;
+                content = content.replace(durMatch[0], '').trim();
+            } else {
+                // Check for Time Pattern (e.g., [0:00], 0:00)
+                const timeMatch = content.match(timeRegex);
+                if (timeMatch) {
+                    timeStr = timeMatch[1]; // Get inside group
+                    content = content.replace(timeMatch[0], '').trim();
+                }
             }
         }
 
@@ -129,63 +299,43 @@ export function parseTracklist(text) {
         return { content, timeStr, seconds, isDuration };
     });
 
-    // Second Pass: Calculate Start Times
-    // Strategy: If explicit durations found, use Cumulative Mode until broken.
-    // Otherwise, use Absolute Mode.
-
     let currentCumulativeTime = 0;
 
     const tracks = parsedLines.map((p, idx) => {
         let startTime = null;
 
         if (hasDurations || (p.isDuration && p.seconds)) {
-            // Cumulative Mode Logic
-            // If previous chain is valid (currentCumulativeTime !== null), use it.
             if (currentCumulativeTime !== null) {
                 startTime = currentCumulativeTime;
-
-                // Calculate NEXT start time
                 if (p.seconds) {
                     currentCumulativeTime += p.seconds;
                 } else {
-                    // If duration missing, we can't determine START of next track properly relative to start
-                    // But we DO know start of THIS track.
-                    // So break chain for NEXT iteration.
                     currentCumulativeTime = null;
                 }
             } else {
-                startTime = null; // Broken chain
+                startTime = null;
             }
         } else {
-            // Absolute Mode Logic (Start Times provided)
-            startTime = p.seconds; // Can be null
+            startTime = p.seconds;
         }
 
         return { ...p, startTime };
     });
 
-    // Third Pass: Extract Metadata & Finalize
     return tracks.map(p => {
         let artist = '';
         let title = p.content;
 
-        // Separators: " - ", " – ", " — ", "Artist- Title"
-        // Regex allows 0 or more spaces around dash.
-        // Include hyphen, en-dash, em-dash.
         const sepRegex = /\s*[-–—]\s*/;
         const parts = p.content.split(sepRegex);
 
         if (parts.length >= 2) {
-            // Heuristic: usually Artist - Title.
-            // If "Putrido– Intro", parts[0]="Putrido", parts[1]="Intro"
             artist = parts[0].trim();
             title = parts.slice(1).join(' - ').trim();
         }
 
-        // Cleanup title if dash remains at start
         title = title.replace(/^[-–—]\s+/, '').trim();
 
-        // Format display string
         let displayTime = '-';
         if (p.startTime !== null && !isNaN(p.startTime)) {
             displayTime = window.formatTime ? window.formatTime(p.startTime) : formatTimeLocal(p.startTime);
@@ -193,7 +343,6 @@ export function parseTracklist(text) {
             displayTime = `Dur: ${p.timeStr}`;
         }
 
-        // Filter out empty rows
         if (!title && !artist && !p.timeStr) return null;
 
         return {
@@ -205,35 +354,71 @@ export function parseTracklist(text) {
     }).filter(t => t !== null);
 }
 
+function parseCueSheet(lines) {
+    const tracks = [];
+    let currentTrack = null;
+    let globalPerformer = '';
+
+    for (const line of lines) {
+        const tLine = line.trim();
+        if (tLine.startsWith('PERFORMER')) {
+            const match = tLine.match(/PERFORMER\s+"?(.+?)"?$/);
+            if (match && !currentTrack) {
+                globalPerformer = match[1];
+            } else if (match && currentTrack) {
+                currentTrack.artist = match[1];
+            }
+        } else if (tLine.startsWith('TRACK')) {
+            if (currentTrack) tracks.push(currentTrack);
+            currentTrack = { title: '', artist: globalPerformer, time: null, timeStr: null };
+        } else if (tLine.startsWith('TITLE') && currentTrack) {
+            const match = tLine.match(/TITLE\s+"?(.+?)"?$/);
+            if (match) currentTrack.title = match[1];
+        } else if (tLine.startsWith('INDEX 01') && currentTrack) {
+            const match = tLine.match(/INDEX 01\s+(\d{2}):(\d{2}):(\d{2})/);
+            if (match) {
+                const m = parseInt(match[1]);
+                const s = parseInt(match[2]);
+                const f = parseInt(match[3]);
+                currentTrack.time = (m * 60) + s + (f / 75); // CUE frames are 1/75s
+                currentTrack.timeStr = formatTimeLocal(currentTrack.time);
+            }
+        }
+    }
+    if (currentTrack) tracks.push(currentTrack);
+    return tracks;
+}
+
 function applyTracks(tracks, replace) {
-    // Check if we have enough valid times to replace markers
-    const validTimes = tracks.filter(t => t.time !== null && !isNaN(t.time) && t.time > 0.1);
+    const validTimes = tracks.filter(t => t.time !== null && !isNaN(t.time) && t.time >= 0);
     const hasEnoughTimes = validTimes.length > 0;
 
-    let historySnapshot = null;
-    if (window.pushHistory) {
-        // Create snapshot before modification
-        // We'll rely on app.js history integration or manual push here if available
-    }
-
     if (replace && hasEnoughTimes) {
-        // REPLACE MARKERS
-        // Apply undo history snapshot
-        if (window.pushHistory) window.pushHistory('Smart Import (Replace Markers)');
+        if (window.pushHistory) window.pushHistory('Smart Import (Replace)');
 
-        // validTimes are Split Points (Track 2 start, Track 3 start...)
         const newMarkers = validTimes.map(t => t.time).sort((a, b) => a - b);
         const uniqueMarkers = [...new Set(newMarkers)];
 
-        // Pass true to skip internal history push in setMarkers
         if (window.setMarkers) window.setMarkers(uniqueMarkers, true);
 
-        // Apply Metadata
+        // Map to exact track count (N markers = N+1 tracks usually, but let's just use exact)
         _state.trackNames = tracks.map(t => t.title);
         _state.trackArtists = tracks.map(t => t.artist);
 
+    } else if (!replace && hasEnoughTimes) {
+        // APPEND MODE
+        if (window.pushHistory) window.pushHistory('Smart Import (Append)');
+
+        const newMarkers = validTimes.map(t => t.time);
+        const combinedMarkers = [..._state.markers, ...newMarkers].sort((a, b) => a - b);
+        const uniqueMarkers = [...new Set(combinedMarkers)];
+
+        if (window.setMarkers) window.setMarkers(uniqueMarkers, true);
+
+        _state.trackNames = [..._state.trackNames, ...tracks.map(t => t.title)];
+        _state.trackArtists = [..._state.trackArtists, ...tracks.map(t => t.artist)];
+
     } else {
-        // SEQUENTIAL METADATA ONLY
         if (window.pushHistory) window.pushHistory('Smart Import (Metadata Only)');
 
         const count = Math.min(tracks.length, _state.markers.length + 1);
@@ -245,7 +430,6 @@ function applyTracks(tracks, replace) {
         }
     }
 
-    // Refresh UI
     if (window._tracklistModule) {
         window._tracklistModule.updateTracklist(_state);
     }
@@ -257,7 +441,9 @@ function escapeHtml(str) {
 }
 
 function formatTimeLocal(seconds) {
-    const m = Math.floor(seconds / 60);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     return `${m}:${s.toString().padStart(2, '0')}`;
 }

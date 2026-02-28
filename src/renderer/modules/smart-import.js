@@ -390,7 +390,8 @@ function parseCueSheet(lines) {
 }
 
 function applyTracks(tracks, replace) {
-    const validTimes = tracks.filter(t => t.time !== null && !isNaN(t.time) && t.time >= 0);
+    // Ignore marker placements at the very start of the file (< 0.1s)
+    const validTimes = tracks.filter(t => t.time !== null && !isNaN(t.time) && t.time >= 0.1);
     const hasEnoughTimes = validTimes.length > 0;
 
     if (replace && hasEnoughTimes) {

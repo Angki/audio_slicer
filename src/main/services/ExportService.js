@@ -7,6 +7,7 @@ const ffmpeg = require('../utils/ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const NodeID3 = require('node-id3');
+const { nativeImage } = require('electron');
 
 /**
  * Export tracks based on markers.
@@ -111,6 +112,30 @@ async function exportTracks(options, event = null) {
 
     const results = [];
     const meta = { format, artist, album, year, mp3Bitrate, albumArtist, genre, comment, coverArt, normalize, sampleRate };
+
+    // Smart Cover Art Processing (Upscale to 1500px)
+    if (meta.coverArt) {
+        try {
+            log(`Processing cover art from: ${meta.coverArt}`);
+            const image = nativeImage.createFromPath(meta.coverArt);
+            if (!image.isEmpty()) {
+                const size = image.getSize();
+                let finalImage = image;
+                if (size.width < 1500) {
+                    log(`Cover art width is ${size.width}px, upscaling to 1500px proportionally...`);
+                    const ratio = 1500 / size.width;
+                    const newHeight = Math.round(size.height * ratio);
+                    finalImage = image.resize({ width: 1500, height: newHeight, quality: 'best' });
+                }
+                const coverDest = path.join(outputPath, 'cover.jpg');
+                fs.writeFileSync(coverDest, finalImage.toJPEG(90));
+                meta.coverArt = coverDest;
+                log(`Final cover art saved locally to: ${coverDest}`);
+            }
+        } catch (err) {
+            log(`Failed to process cover art upscaler: ${err.message}`);
+        }
+    }
 
     if (event) {
         event.sender.send('export:init', { totalTracks: segments.length });

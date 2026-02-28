@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('api', {
     // ── Discogs ──
     discogsSearch: (query) => ipcRenderer.invoke('discogs:search', query),
     discogsGetTracklist: (releaseId, token) => ipcRenderer.invoke('discogs:getTracklist', releaseId, token),
+    discogsDownloadCover: (url, token) => ipcRenderer.invoke('discogs:downloadCover', url, token),
 
     // ── Shell ──
     openPath: (dirPath) => ipcRenderer.invoke('shell:openPath', dirPath),

@@ -145,6 +145,15 @@ ipcMain.handle('discogs:getTracklist', async (_event, releaseId, token) => {
   }
 });
 
+ipcMain.handle('discogs:downloadCover', async (_event, url, token) => {
+  try {
+    return await DiscogsService.downloadCover(url, token);
+  } catch (err) {
+    console.error('discogs:downloadCover error:', err);
+    throw err;
+  }
+});
+
 ipcMain.handle('shell:openPath', async (_event, dirPath) => {
   shell.openPath(dirPath);
 });

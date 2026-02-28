@@ -26,6 +26,6 @@ A smart, Electron-based desktop application for automatically detecting, slicing
 
 1. `npm install`
 2. `npm start` (Runs the Electron application in dev mode)
-3. `npm run build` (Compiles the application to `dist/win-unpacked` and generates the Windows installer). Note that `postbuild` will automatically push the standalone version to your `D:\PC Sync\built` directory.
+3. `npm run build` (Compiles the application to `dist/win-unpacked` and generates the Windows installer).
 
 > Note: For development, FFmpeg binaries are automatically unpacked by electron-builder.

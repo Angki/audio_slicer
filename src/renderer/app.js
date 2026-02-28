@@ -91,7 +91,12 @@ window.showToast = showToast;
 async function loadFile(filePath) {
     if (state.isProcessing) return;
 
-    // Re-initialize waveform if it was destroyed (e.g. after Close Project)
+    // If another file is currently loaded, close it explicitly to clean up state
+    if (state.filePath) {
+        closeProject();
+    }
+
+    // Re-initialize waveform if it was destroyed (after Close Project)
     if (!getWavesurfer()) {
         initWaveform();
     }
@@ -189,6 +194,8 @@ function clearMarkers() {
     pushHistory('Clear Markers');
     state.markers = [];
     state.excludedRegions = []; // Also clear excluded regions when clearing all
+    state.trackNames = [];      // Wipe names and artists
+    state.trackArtists = [];
     const ws = getWavesurfer();
     if (ws && ws.regions) {
         ws.regions.clearRegions();
@@ -214,6 +221,8 @@ window.updateMarkerCount = updateMarkerCount;
 function setMarkers(markerTimes, skipHistory = false) {
     if (!skipHistory) pushHistory('Set Markers');
     state.markers = [...markerTimes].sort((a, b) => a - b);
+    state.trackNames = [];      // Wipe names and artists on bulk detect/import
+    state.trackArtists = [];
     syncMarkersToRegions(); // Added visual sync
     updateTracklist(state);
     updateMarkerCount();

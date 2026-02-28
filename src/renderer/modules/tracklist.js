@@ -189,12 +189,7 @@ export function applyDiscogsNames(tracklist) {
     _state.trackNames = tracklist.map(t => t.title);
 
     // Handle per-track artists from Discogs (compilations/splits)
-    _state.trackArtists = tracklist.map(t => {
-        if (t.artists && t.artists.length > 0) {
-            return t.artists.map(a => a.name).join(', ');
-        }
-        return ''; // Default to empty (uses Album Artist)
-    });
+    _state.trackArtists = tracklist.map(t => t.artists || '');
 
     updateTracklist(_state);
 }

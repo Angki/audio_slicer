@@ -122,6 +122,21 @@ async function loadTracklist(releaseId, token) {
             document.getElementById('exportYear').value = data.info.year;
         }
 
+        // Auto-download highest quality cover art
+        if (data.info.images && data.info.images.length > 0) {
+            try {
+                const tempPath = await window.api.discogsDownloadCover(data.info.images[0], token);
+                _state.coverArtPath = tempPath;
+
+                // Update UI if the export cover picker exists
+                const $coverPreview = document.getElementById('coverPreview');
+                if ($coverPreview) $coverPreview.src = `file://${tempPath.replace(/\\/g, '/')}`;
+                if (window.showToast) window.showToast('Cover art downloaded successfully', 'success', 2000);
+            } catch (err) {
+                console.error('Cover art download failed:', err);
+            }
+        }
+
         // Match tracklist to detected segments
         const markers = _state.markers;
         const duration = _state.audioInfo ? _state.audioInfo.duration : 0;

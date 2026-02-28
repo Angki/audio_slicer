@@ -4,6 +4,9 @@
  */
 
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 const DISCOGS_BASE = 'https://api.discogs.com';
 const USER_AGENT = 'AutoSlice/1.0';
@@ -84,6 +87,7 @@ async function getTracklist(releaseId, token) {
             title: t.title,
             duration: t.duration || '',
             durationSeconds: parseDuration(t.duration),
+            artists: t.artists ? t.artists.map(a => a.name).join(', ') : '',
         }));
 
     return {
@@ -95,6 +99,7 @@ async function getTracklist(releaseId, token) {
             genres: data.genres || [],
             styles: data.styles || [],
             labels: (data.labels || []).map(l => l.name).join(', '),
+            images: data.images ? data.images.map(img => img.resource_url || img.uri) : [],
         },
     };
 }
@@ -145,9 +150,42 @@ function matchMarkersToTracklist(segments, tracklist) {
     return matched;
 }
 
+/**
+ * Download a cover image to a temporary file.
+ */
+function downloadCover(imageUrl, token) {
+    return new Promise((resolve, reject) => {
+        const url = new URL(imageUrl);
+        const headers = { 'User-Agent': USER_AGENT };
+        if (token) headers['Authorization'] = `Discogs token=${token}`;
+
+        https.get(url.toString(), { headers }, (res) => {
+            if (res.statusCode !== 200) {
+                return reject(new Error(`Failed to download image (Status: ${res.statusCode})`));
+            }
+
+            const ext = path.extname(url.pathname) || '.jpg';
+            const tempPath = path.join(os.tmpdir(), `autoslice_cover_${Date.now()}${ext}`);
+            const fileStream = fs.createWriteStream(tempPath);
+
+            res.pipe(fileStream);
+
+            fileStream.on('finish', () => {
+                fileStream.close();
+                resolve(tempPath);
+            });
+            fileStream.on('error', (err) => {
+                fs.unlink(tempPath, () => { });
+                reject(err);
+            });
+        }).on('error', reject);
+    });
+}
+
 module.exports = {
     searchRelease,
     getTracklist,
     matchMarkersToTracklist,
     parseDuration,
+    downloadCover,
 };

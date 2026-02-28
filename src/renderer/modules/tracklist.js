@@ -191,6 +191,42 @@ export function applyDiscogsNames(tracklist) {
     // Handle per-track artists from Discogs (compilations/splits)
     _state.trackArtists = tracklist.map(t => t.artists || '');
 
+    // Check if we can auto-generate markers based on durations
+    const hasDurations = tracklist.every(t => t.durationSeconds > 0);
+    const hasExistingMarkers = _state.markers.length > 0;
+
+    if (hasDurations && tracklist.length > 1) {
+        let shouldGenerate = false;
+        if (!hasExistingMarkers) {
+            shouldGenerate = confirm(`We detected track durations from Discogs. Would you like to automatically generate markers based on these lengths?`);
+        } else {
+            shouldGenerate = confirm(`We detected track durations from Discogs. Would you like to OVERWRITE your existing markers with automatic markers based on these lengths?`);
+        }
+
+        if (shouldGenerate) {
+            pushHistory('Auto-generate Markers (Discogs)');
+            const newMarkers = [];
+            let cumulativeTime = 0;
+            const audioDuration = _state.audioInfo ? _state.audioInfo.duration : Number.MAX_VALUE;
+
+            // Generate markers at the END of each track (except the last one)
+            for (let i = 0; i < tracklist.length - 1; i++) {
+                cumulativeTime += tracklist[i].durationSeconds;
+                if (cumulativeTime >= audioDuration) break; // Don't place markers past EOF
+                newMarkers.push(cumulativeTime);
+            }
+
+            if (newMarkers.length > 0) {
+                if (window.setMarkers) {
+                    window.setMarkers(newMarkers, true);
+                } else {
+                    _state.markers = newMarkers;
+                    if (window.syncMarkersToRegions) window.syncMarkersToRegions();
+                }
+            }
+        }
+    }
+
     updateTracklist(_state);
 }
 

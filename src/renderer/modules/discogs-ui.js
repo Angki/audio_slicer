@@ -129,8 +129,8 @@ async function loadTracklist(releaseId, token) {
                 _state.coverArtPath = tempPath;
 
                 // Update UI if the export cover picker exists
-                const $coverPreview = document.getElementById('coverPreview');
-                if ($coverPreview) $coverPreview.src = `file://${tempPath.replace(/\\/g, '/')}`;
+                const $coverInput = document.getElementById('exportCoverPath');
+                if ($coverInput) $coverInput.value = tempPath;
                 if (window.showToast) window.showToast('Cover art downloaded successfully', 'success', 2000);
             } catch (err) {
                 console.error('Cover art download failed:', err);

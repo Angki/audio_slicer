@@ -227,10 +227,11 @@ export function initWaveform() {
             const wrapper = wavesurfer.getWrapper();
             const wrapperRect = wrapper.getBoundingClientRect();
 
-            // e.clientX - wrapperRect.left perfectly calculates 
-            // the absolute X pixel coordinate inside the expanded inner canvas
-            const xOnWaveform = e.clientX - wrapperRect.left;
-            const relX = Math.max(0, Math.min(1, xOnWaveform / wrapperRect.width));
+            // Calculate the absolute pixel offset accounting for the scroll container
+            const xOnWaveform = (e.clientX - wrapperRect.left) + wrapper.scrollLeft;
+
+            // Map pixel location dynamically against total scrollable width
+            const relX = Math.max(0, Math.min(1, xOnWaveform / wrapper.scrollWidth));
 
             const time = relX * wavesurfer.getDuration();
             $tooltip.textContent = window.formatTime(time);

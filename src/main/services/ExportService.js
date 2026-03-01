@@ -403,8 +403,8 @@ function exportSegment(inputFile, segment, meta, event) {
             .on('progress', (progress) => {
                 if (event) {
                     // Try to use progress.percent, or calculate it based on timemark
-                    let percent = progress.percent;
-                    if (!percent && progress.timemark) {
+                    let percent = 0;
+                    if (progress.timemark) {
                         const parts = progress.timemark.match(/(\d{2}):(\d{2}):(\d{2}).(\d{2})/);
                         if (parts) {
                             const secs = parseInt(parts[1]) * 3600 + parseInt(parts[2]) * 60 + parseInt(parts[3]) + parseInt(parts[4]) / 100;

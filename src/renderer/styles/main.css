@@ -41,6 +41,81 @@
   --transition: 150ms ease;
 }
 
+[data-theme="light"] {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e9ecef;
+  --bg-elevated: #dee2e6;
+  --bg-hover: #e2e8f0;
+
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --accent: #6d28d9;
+  --accent-light: #8b5cf6;
+  --accent-dim: #5b21b6;
+  --accent-glow: rgba(109, 40, 217, 0.15);
+
+  --border: #cbd5e1;
+  --border-light: #e2e8f0;
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+}
+
+[data-theme="dracula"] {
+  --bg-primary: #282a36;
+  --bg-secondary: #21222c;
+  --bg-tertiary: #44475a;
+  --bg-elevated: #6272a4;
+  --bg-hover: #50536b;
+
+  --text-primary: #f8f8f2;
+  --text-secondary: #bfbfbf;
+  --text-muted: #6272a4;
+
+  --accent: #bd93f9;
+  --accent-light: #ff79c6;
+  --accent-dim: #9aa8d4;
+  --accent-glow: rgba(189, 147, 249, 0.15);
+
+  --success: #50fa7b;
+  --warning: #f1fa8c;
+  --danger: #ff5555;
+  --info: #8be9fd;
+
+  --border: #44475a;
+  --border-light: #6272a4;
+}
+
+[data-theme="cyberpunk"] {
+  --bg-primary: #050a0f;
+  --bg-secondary: #0a1118;
+  --bg-tertiary: #131c26;
+  --bg-elevated: #1f2d3d;
+  --bg-hover: #1f2937;
+
+  --text-primary: #fdf2f8;
+  --text-secondary: #fbcfe8;
+  --text-muted: #831843;
+
+  --accent: #f43f5e;
+  --accent-light: #fb7185;
+  --accent-dim: #e11d48;
+  --accent-glow: rgba(244, 63, 94, 0.25);
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #0ea5e9;
+
+  --border: #9d174d;
+  --border-light: #be185d;
+}
+
 *,
 *::before,
 *::after {
@@ -131,6 +206,7 @@ body {
   letter-spacing: -0.3px;
   background: linear-gradient(135deg, var(--accent-light), var(--accent));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -505,8 +581,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.65;
+  }
 }
 
 /* Waveform cursor changes in exclude mode */

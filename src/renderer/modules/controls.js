@@ -291,7 +291,8 @@ export function initControls(state) {
             // Show UI
             if ($exportProgressOverlay) {
                 $exportProgressOverlay.classList.remove('hidden');
-                $exportSuccessActions.classList.add('hidden');
+                if ($exportSuccessActions) $exportSuccessActions.classList.add('hidden');
+                if ($exportProgressText) $exportProgressText.textContent = 'Exporting Tracks...';
                 if ($exportProgressContainer) $exportProgressContainer.innerHTML = '';
                 if ($exportETA) $exportETA.textContent = 'Initializing Export Engine...';
             }
@@ -331,9 +332,9 @@ export function initControls(state) {
             }
             // Show Success Actions
             if ($exportProgressOverlay) {
-                $exportProgressText.textContent = `✓ Exported ${result.tracks.length} tracks successfully!`;
-                $exportETA.textContent = `Saved to: ${result.outputPath}`;
-                $exportSuccessActions.classList.remove('hidden');
+                if ($exportProgressText) $exportProgressText.textContent = `✓ Exported ${result.tracks.length} tracks successfully!`;
+                if ($exportETA) $exportETA.textContent = `Saved to: ${result.outputPath}`;
+                if ($exportSuccessActions) $exportSuccessActions.classList.remove('hidden');
             } else {
                 window.showToast(`✓ Exported ${result.tracks.length} tracks`, 'success');
                 const openFolder = confirm(`Export complete! Saved to:\n${result.outputPath}\n\nOpen folder?`);

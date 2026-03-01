@@ -90,14 +90,31 @@ window.showToast = showToast;
 // ── File Loading ───────────────────────────────────────────────
 async function loadFile(filePath) {
     if (state.isProcessing) return;
-
-    // If another file is currently loaded, close it explicitly to clean up state
-    if (state.filePath) {
-        closeProject();
-    }
+    state.isProcessing = true;
 
     try {
         showLoading('Loading audio file...');
+
+        // Silently tear down previous project if open (without flipping UI classes externally)
+        if (state.filePath) {
+            // Reset state but *don't* hide mainContent yet — we'll update it ourselves below
+            state.filePath = null;
+            state.wavPath = null;
+            state.audioInfo = null;
+            state.markers = [];
+            state.trackNames = [];
+            state.trackArtists = [];
+            state.excludedRegions = [];
+            state.discogsInfo = null;
+            clearHistory();
+            destroyWaveform();
+        }
+
+        // Ensure drop zone is hidden and main area is ready
+        $dropZone.classList.add('hidden');
+        $mainContent.classList.remove('hidden');
+        $fileNameDisplay.textContent = 'Loading…';
+        $fileInfoDisplay.textContent = '';
 
         // Get audio info
         const info = await window.api.getAudioInfo(filePath);
@@ -113,11 +130,7 @@ async function loadFile(filePath) {
         const wavPath = await window.api.decodeToWav(filePath);
         state.wavPath = wavPath;
 
-        // Show main content BEFORE initialising WaveSurfer so the canvas has non-zero dimensions
-        $dropZone.classList.add('hidden');
-        $mainContent.classList.remove('hidden');
-
-        // Re-initialize waveform now that container is visible
+        // Re-initialize waveform (always fresh instance)
         if (!getWavesurfer()) {
             initWaveform();
         }
@@ -133,7 +146,6 @@ async function loadFile(filePath) {
                 return Math.max(0, val);
             });
 
-            // Load into waveform with pre-calculated peaks
             showLoading('Rendering waveform...');
             await loadAudio(wavPath, peaks);
         } catch (peaksErr) {
@@ -141,22 +153,10 @@ async function loadFile(filePath) {
             await loadAudio(wavPath);
         }
 
-        // Clear previous markers
-        state.markers = [];
-        state.trackNames = [];
-        state.trackArtists = [];
-        state.discogsInfo = null;
-        state.trackNames = [];
-        state.trackArtists = [];
-        state.excludedRegions = [];
+        // Sync tracklist and history
         updateTracklist(state);
-
-        // Reset history
         clearHistory();
-
-        // Show close button now that a project is open
         $btnCloseProject.style.display = '';
-
         hideLoading();
     } catch (err) {
         hideLoading();
@@ -172,6 +172,8 @@ async function loadFile(filePath) {
         destroyWaveform();
 
         showToast(`Failed to load file: ${err.message}`, 'error', 6000);
+    } finally {
+        state.isProcessing = false;
     }
 }
 

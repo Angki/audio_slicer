@@ -138,25 +138,6 @@ export function initControls(state) {
     let exportTotalTracks = 0;
     let currentOutputPath = '';
 
-    const $uiThemeSelect = document.getElementById('uiThemeSelect');
-    if ($uiThemeSelect) {
-        const savedTheme = localStorage.getItem('autoslice-theme') || 'dark';
-        $uiThemeSelect.value = savedTheme;
-        if (savedTheme !== 'dark') {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        }
-
-        $uiThemeSelect.addEventListener('change', (e) => {
-            const theme = e.target.value;
-            if (theme === 'dark') {
-                document.documentElement.removeAttribute('data-theme');
-            } else {
-                document.documentElement.setAttribute('data-theme', theme);
-            }
-            localStorage.setItem('autoslice-theme', theme);
-        });
-    }
-
     if ($btnCopyOutputPath) {
         $btnCopyOutputPath.addEventListener('click', () => {
             navigator.clipboard.writeText(currentOutputPath).then(() => {

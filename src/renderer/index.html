@@ -211,14 +211,6 @@
               <option value="mp3" selected>MP3 320kbps</option>
             </select>
           </label>
-          <label>Theme
-            <select id="uiThemeSelect" class="select select-sm">
-              <option value="dark">Dark (Default)</option>
-              <option value="light">Light</option>
-              <option value="dracula">Dracula</option>
-              <option value="cyberpunk">Cyberpunk</option>
-            </select>
-          </label>
           <label>Artist
             <input id="exportArtist" type="text" placeholder="Artist" class="input">
           </label>
@@ -360,6 +352,14 @@
             <button id="btnSetDefaultOutputDir" class="btn btn-sm">Browse</button>
             <button id="btnClearDefaultOutputDir" class="btn btn-sm btn-ghost" title="Clear">×</button>
           </div>
+        </label>
+        <label>App UI Theme
+          <select id="settingUITheme" class="select">
+            <option value="dark">Dark (Default)</option>
+            <option value="light">Light</option>
+            <option value="dracula">Dracula</option>
+            <option value="cyberpunk">Cyberpunk</option>
+          </select>
         </label>
         <label>Waveform Theme
           <select id="settingWaveformTheme" class="select">

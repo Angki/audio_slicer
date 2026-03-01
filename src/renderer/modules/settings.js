@@ -23,6 +23,7 @@ export async function initSettings() {
     const $btnSetDefaultOutputDir = document.getElementById('btnSetDefaultOutputDir');
     const $btnClearDefaultOutputDir = document.getElementById('btnClearDefaultOutputDir');
     const $settingWaveformTheme = document.getElementById('settingWaveformTheme');
+    const $settingUITheme = document.getElementById('settingUITheme');
     const $btnApplySettings = document.getElementById('btnApplySettings');
 
     // Load initial settings
@@ -30,6 +31,7 @@ export async function initSettings() {
         $settingDefaultFormat.value = await window.api.storeGet('defaultFormat', 'flac');
         $settingDefaultOutputDir.value = await window.api.storeGet('defaultOutputDir', '');
         $settingWaveformTheme.value = await window.api.storeGet('waveformTheme', 'purple');
+        $settingUITheme.value = await window.api.storeGet('uiTheme', 'dark');
 
         // Apply the settings to export bar if possible
         const $exportFormat = document.getElementById('exportFormat');
@@ -76,6 +78,7 @@ export async function initSettings() {
             await window.api.storeSet('defaultFormat', $settingDefaultFormat.value);
             await window.api.storeSet('defaultOutputDir', $settingDefaultOutputDir.value);
             await window.api.storeSet('waveformTheme', $settingWaveformTheme.value);
+            await window.api.storeSet('uiTheme', $settingUITheme.value);
 
             // Sync to export bar
             const $exportFormat = document.getElementById('exportFormat');
@@ -83,6 +86,7 @@ export async function initSettings() {
 
             // Optional: apply waveform theme immediately
             applyWaveformTheme($settingWaveformTheme.value);
+            applyUITheme($settingUITheme.value);
 
             toggleModal($settingsModal, false);
             if (window.showToast) window.showToast('Settings saved successfully', 'success');
@@ -91,6 +95,15 @@ export async function initSettings() {
 
     // Apply initial theme
     applyWaveformTheme($settingWaveformTheme.value);
+    applyUITheme($settingUITheme.value);
+}
+
+function applyUITheme(theme) {
+    if (theme === 'dark') {
+        document.documentElement.removeAttribute('data-theme');
+    } else {
+        document.documentElement.setAttribute('data-theme', theme);
+    }
 }
 
 // Global theme variables

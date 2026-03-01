@@ -56,14 +56,13 @@ export function initWaveform() {
             regionsPlugin,
             TimelinePlugin.create({
                 height: 20,
-                timeInterval: 10,
-                primaryLabelInterval: 30,
                 style: {
                     fontSize: '10px',
                     color: '#55556a',
                 },
             }),
             MinimapPlugin.create({
+                container: document.getElementById('minimapContainer'),
                 height: 40,
                 waveColor: theme.waveColor,
                 progressColor: theme.progressColor,
@@ -225,16 +224,20 @@ export function initWaveform() {
     if ($tooltip) {
         $waveformContainer.addEventListener('mousemove', (e) => {
             if (!wavesurfer || !wavesurfer.getDuration()) return;
-            const scrollWrapper = wavesurfer.getWrapper().parentElement;
-            const rect = scrollWrapper.getBoundingClientRect();
+            const wrapper = wavesurfer.getWrapper();
+            const wrapperRect = wrapper.getBoundingClientRect();
 
-            // Calculate absolute X position within the scrolled content
-            const xOnWaveform = (e.clientX - rect.left) + scrollWrapper.scrollLeft;
-            const relX = Math.max(0, Math.min(1, xOnWaveform / scrollWrapper.scrollWidth));
+            // e.clientX - wrapperRect.left perfectly calculates 
+            // the absolute X pixel coordinate inside the expanded inner canvas
+            const xOnWaveform = e.clientX - wrapperRect.left;
+            const relX = Math.max(0, Math.min(1, xOnWaveform / wrapperRect.width));
 
             const time = relX * wavesurfer.getDuration();
             $tooltip.textContent = window.formatTime(time);
-            $tooltip.style.left = `${e.clientX - rect.left + 10}px`;
+
+            // Visual offset restricted to the bounds of the outer scroll viewport
+            const containerRect = $waveformContainer.getBoundingClientRect();
+            $tooltip.style.left = `${e.clientX - containerRect.left + 15}px`;
             $tooltip.style.opacity = '1';
         });
 

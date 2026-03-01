@@ -277,12 +277,8 @@ function exportSegment(inputFile, segment, meta, event) {
         // Track duration estimation for progress
         let estDuration = (end !== null ? end : start + 300) - start;
 
-        // Cover Art embedding
-        const hasCover = coverArt && fs.existsSync(coverArt);
-        if (hasCover) {
-            cmd = cmd.input(coverArt);
-        }
-
+        // IMPORTANT: seekInput must be applied BEFORE adding coverArt,
+        // otherwise ffmpeg applies the -ss offset to the image input.
         if (!exclusions || exclusions.length === 0) {
             // Standard export
             cmd = cmd.seekInput(start);
@@ -292,7 +288,15 @@ function exportSegment(inputFile, segment, meta, event) {
             if (normalize) {
                 cmd = cmd.audioFilter('loudnorm=I=-16:TP=-1.5:LRA=11');
             }
-        } else {
+        }
+
+        // Cover Art embedding
+        const hasCover = coverArt && fs.existsSync(coverArt);
+        if (hasCover) {
+            cmd = cmd.input(coverArt);
+        }
+
+        if (exclusions && exclusions.length > 0) {
             // Complex filter export (stitching around exclusions)
             const keptChunks = [];
             let current = start;

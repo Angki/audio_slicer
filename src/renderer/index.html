@@ -268,11 +268,12 @@
     <!-- Export Progress Overlay -->
     <div id="exportProgressOverlay" class="loading-overlay hidden" style="flex-direction: column;">
        <h3 style="margin-bottom: 15px;">Exporting Tracks...</h3>
-       <div style="width: 350px; background: rgba(255,255,255,0.1); height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 10px;">
-          <div id="exportProgressBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+       
+       <div id="exportProgressContainer" style="display: flex; flex-direction: column; gap: 8px; width: 350px; max-height: 250px; overflow-y: auto; padding-right: 5px; margin-bottom: 10px;">
+           <!-- Dynamic Progress Bars Injected Here -->
        </div>
-       <div id="exportProgressText" style="margin-bottom: 5px; font-weight: 500;">Starting export...</div>
-       <div id="exportETA" style="font-size: 0.9em; color: var(--text-muted);">Calculating ETA...</div>
+
+       <div id="exportETA" style="font-size: 0.9em; color: var(--text-muted); font-weight: bold;">Calculating ETA...</div>
        
        <div id="exportSuccessActions" class="hidden" style="margin-top: 25px; display: flex; gap: 10px;">
          <button id="btnCopyOutputPath" class="btn btn-ghost">Copy Output Path</button>

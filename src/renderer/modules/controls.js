@@ -159,127 +159,188 @@ export function initControls(state) {
     }
 
     // ── Export ──
-    if ($btnExport) {
-        $btnExport.addEventListener('click', async () => {
-            if (!state.filePath || state.markers.length === 0) {
-                alert('No file loaded or no markers set');
-                return;
+
+    $btnExport.addEventListener('click', async () => {
+        if (!state.filePath || state.markers.length === 0) {
+            alert('No file loaded or no markers set');
+            return;
+        }
+
+        let outputDir = '';
+        if (window.api.storeGet) {
+            outputDir = await window.api.storeGet('defaultOutputDir', '');
+        }
+        if (!outputDir) {
+            outputDir = await window.api.selectExportDir();
+            if (!outputDir) return;
+        }
+
+        try {
+            const format = document.getElementById('exportFormat').value;
+            const artist = document.getElementById('exportArtist').value || 'Unknown Artist';
+            const album = document.getElementById('exportAlbum').value || 'Unknown Album';
+            const year = document.getElementById('exportYear').value || '';
+            const albumArtist = document.getElementById('exportAlbumArtist')?.value || '';
+            const genre = document.getElementById('exportGenre')?.value || '';
+            const comment = document.getElementById('exportComment')?.value || '';
+            const coverArt = document.getElementById('exportCoverPath')?.value || null;
+            const normalize = document.getElementById('exportNormalize')?.checked || false;
+            const sampleRate = document.getElementById('exportSampleRate')?.value || null;
+
+            // Gather track names and artists from the track list inputs
+            const trackNameInputs = document.querySelectorAll('.track-title input');
+            const trackNames = Array.from(trackNameInputs).map(input => input.value);
+
+            const trackArtistInputs = document.querySelectorAll('.track-artist input');
+            const trackArtists = Array.from(trackArtistInputs).map(input => input.value);
+
+            // Dictionary to hold dynamically created progress bar elements
+            const progressBars = {};
+            completedTracks = 0;
+
+            // Listen to IPC for progress
+            if (window.api.onExportInit) {
+                window.api.onExportInit((data) => {
+                    exportTotalTracks = data.totalTracks;
+                    exportStartTime = Date.now();
+                    if ($exportProgressContainer) $exportProgressContainer.innerHTML = ''; // clear previous
+                });
             }
 
-            let outputDir = '';
-            if (window.api.storeGet) {
-                outputDir = await window.api.storeGet('defaultOutputDir', '');
-            }
-            if (!outputDir) {
-                outputDir = await window.api.selectExportDir();
-                if (!outputDir) return;
-            }
+            if (window.api.onExportProgress) {
+                window.api.onExportProgress((data) => {
+                    if (!$exportProgressContainer) return;
 
-            try {
-                const format = document.getElementById('exportFormat').value;
-                const artist = document.getElementById('exportArtist').value || 'Unknown Artist';
-                const album = document.getElementById('exportAlbum').value || 'Unknown Album';
-                const year = document.getElementById('exportYear').value || '';
-                const albumArtist = document.getElementById('exportAlbumArtist')?.value || '';
-                const genre = document.getElementById('exportGenre')?.value || '';
-                const comment = document.getElementById('exportComment')?.value || '';
-                const coverArt = document.getElementById('exportCoverPath')?.value || null;
-                const normalize = document.getElementById('exportNormalize')?.checked || false;
-                const sampleRate = document.getElementById('exportSampleRate')?.value || null;
+                    if (data.type === 'start_track') {
+                        // Create a new progress element for this track
+                        const barWrapper = document.createElement('div');
+                        barWrapper.style.marginBottom = '5px';
+                        barWrapper.style.display = 'flex';
+                        barWrapper.style.flexDirection = 'column';
+                        barWrapper.style.gap = '2px';
 
-                // Gather track names and artists from the track list inputs
-                const trackNameInputs = document.querySelectorAll('.track-title input');
-                const trackNames = Array.from(trackNameInputs).map(input => input.value);
+                        const label = document.createElement('div');
+                        label.style.fontSize = '0.85em';
+                        label.style.display = 'flex';
+                        label.style.justifyContent = 'space-between';
+                        label.innerHTML = `<span><strong style="color:var(--accent)">#${data.trackNum}</strong> ${data.trackName}</span> <span class="pct">0%</span>`;
 
-                const trackArtistInputs = document.querySelectorAll('.track-artist input');
-                const trackArtists = Array.from(trackArtistInputs).map(input => input.value);
+                        const trackContainer = document.createElement('div');
+                        trackContainer.style.background = 'rgba(255,255,255,0.1)';
+                        trackContainer.style.height = '6px';
+                        trackContainer.style.borderRadius = '3px';
+                        trackContainer.style.overflow = 'hidden';
 
-                // Listen to IPC for progress
-                if (window.api.onExportInit) {
-                    window.api.onExportInit((data) => {
-                        exportTotalTracks = data.totalTracks;
-                        exportStartTime = Date.now();
-                    });
-                }
+                        const fill = document.createElement('div');
+                        fill.style.width = '0%';
+                        fill.style.height = '100%';
+                        fill.style.background = 'var(--accent)';
+                        fill.style.transition = 'width 0.2s';
 
-                if (window.api.onExportProgress) {
-                    window.api.onExportProgress((data) => {
-                        if (data.type === 'start_track') {
-                            $exportProgressText.textContent = `Exporting track ${data.trackNum} of ${data.totalTracks}: ${data.trackName}`;
-                            $exportProgressBar.style.width = '0%';
-                            $exportETA.textContent = 'Calculating ETA...';
-                        } else if (data.type === 'encode_progress') {
-                            $exportProgressBar.style.width = `${data.percent}%`;
+                        trackContainer.appendChild(fill);
+                        barWrapper.appendChild(label);
+                        barWrapper.appendChild(trackContainer);
 
-                            // Calculate ETA
-                            const elapsed = Date.now() - exportStartTime;
-                            const tracksDoneAmount = (data.trackNum - 1) + (data.percent / 100);
-                            if (tracksDoneAmount > 0) {
-                                const totalEstTime = (elapsed / tracksDoneAmount) * exportTotalTracks;
-                                const remaining = totalEstTime - elapsed;
-                                if (remaining > 0) {
-                                    const remSec = Math.max(0, Math.floor(remaining / 1000));
-                                    $exportETA.textContent = `ETA: ${window.formatTime ? window.formatTime(remSec) : remSec + 's'}`;
-                                } else {
-                                    $exportETA.textContent = 'Finishing up...';
-                                }
+                        $exportProgressContainer.appendChild(barWrapper);
+
+                        // Save refs
+                        progressBars[data.trackNum] = { fill, label: label.querySelector('.pct') };
+
+                        // Scroll container to bottom
+                        $exportProgressContainer.scrollTop = $exportProgressContainer.scrollHeight;
+
+                    } else if (data.type === 'encode_progress') {
+                        const bar = progressBars[data.trackNum];
+                        if (bar) {
+                            bar.fill.style.width = `${data.percent}%`;
+                            bar.label.textContent = `${Math.round(data.percent)}%`;
+
+                            if (data.percent >= 100 && !bar.completed) {
+                                bar.completed = true;
+                                bar.fill.style.background = '#10b981'; // Turn green when done
+                                completedTracks++;
                             }
                         }
-                    });
-                }
 
-                // Show UI
-                if ($exportProgressOverlay) {
-                    $exportProgressOverlay.classList.remove('hidden');
-                    $exportSuccessActions.classList.add('hidden');
-                    $exportProgressText.textContent = 'Starting export...';
-                    $exportProgressBar.style.width = '0%';
-                    $exportETA.textContent = 'Initializing...';
-                }
+                        // Calculate Overall ETA
+                        const elapsed = Date.now() - exportStartTime;
 
-                const result = await window.api.exportTracks({
-                    inputFile: state.filePath,
-                    markers: state.markers,
-                    excludedRegions: state.excludedRegions || [],
-                    outputDir,
-                    format,
-                    artist,
-                    album,
-                    year,
-                    trackNames,
-                    trackArtists,
-                    albumArtist,
-                    genre,
-                    comment,
-                    coverArt,
-                    normalize,
-                    sampleRate,
+                        // Estimate total percentage across all tracks
+                        let totalPercentAcc = 0;
+                        for (const num in progressBars) {
+                            totalPercentAcc += parseFloat(progressBars[num].fill.style.width) || 0;
+                        }
+                        const totalOverallPercent = totalPercentAcc / exportTotalTracks;
+
+                        if (totalOverallPercent > 0) {
+                            const totalEstTime = (elapsed / totalOverallPercent) * 100;
+                            const remaining = totalEstTime - elapsed;
+                            if (remaining > 0) {
+                                const remSec = Math.max(0, Math.floor(remaining / 1000));
+                                $exportETA.textContent = `ETA: ${window.formatTime ? window.formatTime(remSec) : remSec + 's'} | ${completedTracks}/${exportTotalTracks} done`;
+                            } else {
+                                $exportETA.textContent = 'Finishing up...';
+                            }
+                        }
+                    }
                 });
-
-                if (window.api.removeExportListeners) {
-                    window.api.removeExportListeners();
-                }
-
-                currentOutputPath = result.outputPath;
-
-                // Show Success Actions
-                if ($exportProgressOverlay) {
-                    $exportProgressBar.style.width = '100%';
-                    $exportProgressText.textContent = `✓ Exported ${result.tracks.length} tracks successfully!`;
-                    $exportETA.textContent = `Saved to: ${result.outputPath}`;
-                    $exportSuccessActions.classList.remove('hidden');
-                } else {
-                    window.showToast(`✓ Exported ${result.tracks.length} tracks`, 'success');
-                    const openFolder = confirm(`Export complete! Saved to:\n${result.outputPath}\n\nOpen folder?`);
-                    if (openFolder) window.api.openPath(result.outputPath);
-                }
-
-            } catch (err) {
-                if (window.api.removeExportListeners) window.api.removeExportListeners();
-                if ($exportProgressOverlay) $exportProgressOverlay.classList.add('hidden');
-                console.error('Export failed:', err);
-                alert(`Export failed: ${err.message}`);
             }
-        });
-    }
+
+            // Show UI
+            if ($exportProgressOverlay) {
+                $exportProgressOverlay.classList.remove('hidden');
+                $exportSuccessActions.classList.add('hidden');
+                if ($exportProgressContainer) $exportProgressContainer.innerHTML = '';
+                if ($exportETA) $exportETA.textContent = 'Initializing Export Engine...';
+            }
+
+            const result = await window.api.exportTracks({
+                inputFile: state.filePath,
+                markers: state.markers,
+                excludedRegions: state.excludedRegions || [],
+                outputDir,
+                format,
+                artist,
+                album,
+                year,
+                trackNames,
+                trackArtists,
+                albumArtist,
+                genre,
+                comment,
+                coverArt,
+                normalize,
+                sampleRate,
+            });
+
+            if (window.api.removeExportListeners) {
+                window.api.removeExportListeners();
+            }
+
+            currentOutputPath = result.outputPath;
+
+            // Finalize UI presentation
+            if ($exportETA) $exportETA.textContent = 'Export Completed Successfully! 🎉';
+            if ($exportProgressContainer) {
+                const allBars = $exportProgressContainer.querySelectorAll('div[style*="background: var(--accent)"]');
+                allBars.forEach(b => b.style.background = '#10b981'); // Ensure everything remaining turns green
+            }
+            // Show Success Actions
+            if ($exportProgressOverlay) {
+                $exportProgressText.textContent = `✓ Exported ${result.tracks.length} tracks successfully!`;
+                $exportETA.textContent = `Saved to: ${result.outputPath}`;
+                $exportSuccessActions.classList.remove('hidden');
+            } else {
+                window.showToast(`✓ Exported ${result.tracks.length} tracks`, 'success');
+                const openFolder = confirm(`Export complete! Saved to:\n${result.outputPath}\n\nOpen folder?`);
+                if (openFolder) window.api.openPath(result.outputPath);
+            }
+
+        } catch (err) {
+            if (window.api.removeExportListeners) window.api.removeExportListeners();
+            if ($exportProgressOverlay) $exportProgressOverlay.classList.add('hidden');
+            console.error('Export failed:', err);
+            alert(`Export failed: ${err.message}`);
+        }
+    });
 }

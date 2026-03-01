@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-02-28
+
+### Added
+- **Multi-Threaded / Parallel Export**: Dramatically improved export speeds by processing multiple track segments concurrently (up to available CPU cores) during export compilation.
+- **Discogs Cover Art Gallery**: Choose the intended artwork manually from a gallery grid displaying all the high-quality source covers associated with the release instead of automatically resorting to the first image.
+- **Multi-Track Export Progress UI**: Display individual loading bars across all actively rendering tracks sequentially on screen.
+
+## [0.1.1] - 2026-02-28
+
+### Fixed
+- Addressed bugs with `0:00` starting timestamps dropping the first marker incorrectly.
+- Resolved file teardown and persistence bug: old tracks metadata would linger invisibly after clearing or reloading a new drop.
+- Discogs split/compilation artist parsing overrides.
+
 ## [0.1.0] - 2026-02-27
 
 ### Added

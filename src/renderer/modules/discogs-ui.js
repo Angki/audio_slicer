@@ -122,18 +122,27 @@ async function loadTracklist(releaseId, token) {
             document.getElementById('exportYear').value = data.info.year;
         }
 
-        // Auto-download highest quality cover art
+        // Render Cover Art Gallery directly inside the tracklist section
+        let coverGalleryHtml = '';
         if (data.info.images && data.info.images.length > 0) {
+            coverGalleryHtml = `
+            <div class="discogs-cover-gallery-section" style="margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.15); border-radius: 6px;">
+                <div style="font-size: 0.85em; margin-bottom: 8px; font-weight: 500;">Select Cover Art:</div>
+                <div class="discogs-cover-gallery-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;">
+                    ${data.info.images.map((img, idx) => `
+                        <img \n                            src="${img}" \n                            class="discogs-gallery-img ${idx === 0 ? 'selected' : ''}" \n                            data-url="${img}"\n                            style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid ${idx === 0 ? 'var(--accent)' : 'transparent'};"\n                            title="Click to use as Cover Art"\n                        >\n                    `).join('')}
+                </div>
+            </div>
+            `;
+
+            // Auto-trigger download for the first image so the user has *something* ready by default
             try {
                 const tempPath = await window.api.discogsDownloadCover(data.info.images[0], token);
                 _state.coverArtPath = tempPath;
-
-                // Update UI if the export cover picker exists
                 const $coverInput = document.getElementById('exportCoverPath');
                 if ($coverInput) $coverInput.value = tempPath;
-                if (window.showToast) window.showToast('Cover art downloaded successfully', 'success', 2000);
             } catch (err) {
-                console.error('Cover art download failed:', err);
+                console.error('Initial cover art download failed:', err);
             }
         }
 
@@ -150,7 +159,7 @@ async function loadTracklist(releaseId, token) {
         // Simple match: compare durations
         const matched = matchTracklist(segments, data.tracklist);
 
-        renderTracklist(matched, data.tracklist);
+        renderTracklist(matched, data.tracklist, coverGalleryHtml, token);
     } catch (err) {
         console.error('Tracklist load error:', err);
         $tracklist.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
@@ -179,10 +188,10 @@ function matchTracklist(segments, tracklist) {
     return result;
 }
 
-function renderTracklist(matched, tracklist) {
+function renderTracklist(matched, tracklist, coverHtml = '', token) {
     const $tracklist = document.getElementById('discogsTracklist');
 
-    let html = `
+    let html = coverHtml + `
     <div class="discogs-actions-bar">
         <label><input type="checkbox" id="discogsSelectAll" checked> Select All</label>
     </div>
@@ -244,6 +253,36 @@ function renderTracklist(matched, tracklist) {
         }
 
         window.applyDiscogsNames(selectedTracks);
+    });
+
+    // ── Gallery Click Listener ──
+    const $galleryImages = $tracklist.querySelectorAll('.discogs-gallery-img');
+    $galleryImages.forEach(img => {
+        img.addEventListener('click', async (e) => {
+            // Unselect all
+            $galleryImages.forEach(i => {
+                i.classList.remove('selected');
+                i.style.border = '2px solid transparent';
+            });
+            // Select current
+            e.target.classList.add('selected');
+            e.target.style.border = '2px solid var(--accent)';
+
+            const imgUrl = e.target.dataset.url;
+            if (imgUrl) {
+                if (window.showToast) window.showToast('Downloading selected cover art...', 'info');
+                try {
+                    const tempPath = await window.api.discogsDownloadCover(imgUrl, token);
+                    if (_state) _state.coverArtPath = tempPath;
+                    const $coverInput = document.getElementById('exportCoverPath');
+                    if ($coverInput) $coverInput.value = tempPath;
+                    if (window.showToast) window.showToast('Cover art updated', 'success');
+                } catch (err) {
+                    console.error('Gallery image download failed:', err);
+                    if (window.showToast) window.showToast('Failed to download image', 'error');
+                }
+            }
+        });
     });
 }
 

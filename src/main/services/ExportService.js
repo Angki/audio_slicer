@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const NodeID3 = require('node-id3');
 const { nativeImage } = require('electron');
+const os = require('os');
 
 /**
  * Export tracks based on markers.
@@ -141,52 +142,77 @@ async function exportTracks(options, event = null) {
         event.sender.send('export:init', { totalTracks: segments.length });
     }
 
-    for (const seg of segments) {
-        let retries = 3;
-        let success = false;
-        let lastError = null;
+    // Determine concurrency limit (max 4 or CPU cores - 1)
+    const concurrency = Math.max(1, Math.min(6, os.cpus().length - 1));
+    log(`Concurrency limit set to ${concurrency}`);
 
-        log(`Starting encoding track ${seg.trackNum}: ${seg.fileName}`);
+    // Create a simple custom task queue in place of p-limit
+    let currentIndex = 0;
 
-        if (event) {
-            event.sender.send('export:progress', {
-                type: 'start_track',
-                trackNum: seg.trackNum,
-                totalTracks: segments.length,
-                trackName: seg.trackName
-            });
-        }
+    // Worker function processes segments until none are left
+    const worker = async () => {
+        while (currentIndex < segments.length) {
+            const segIndex = currentIndex++;
+            const seg = segments[segIndex];
 
-        while (retries > 0 && !success) {
-            try {
-                await exportSegment(inputFile, seg, meta, event);
-                success = true;
-                log(`Successfully encoded track ${seg.trackNum}`);
-            } catch (err) {
-                retries--;
-                lastError = err;
-                log(`Error encoding track ${seg.trackNum}. Retries left: ${retries}. Error: ${err.message}`);
-                if (retries > 0) {
-                    log(`Retrying track ${seg.trackNum}...`);
-                    await new Promise(r => setTimeout(r, 1000)); // wait 1s before retry
+            let retries = 3;
+            let success = false;
+            let lastError = null;
+
+            log(`Starting encoding track ${seg.trackNum}: ${seg.fileName}`);
+
+            if (event) {
+                event.sender.send('export:progress', {
+                    type: 'start_track',
+                    trackNum: seg.trackNum,
+                    totalTracks: segments.length,
+                    trackName: seg.trackName
+                });
+            }
+
+            while (retries > 0 && !success) {
+                try {
+                    await exportSegment(inputFile, seg, meta, event);
+                    success = true;
+                    log(`Successfully encoded track ${seg.trackNum}`);
+                } catch (err) {
+                    retries--;
+                    lastError = err;
+                    log(`Error encoding track ${seg.trackNum}. Retries left: ${retries}. Error: ${err.message}`);
+                    if (retries > 0) {
+                        log(`Retrying track ${seg.trackNum}...`);
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
                 }
             }
-        }
 
-        if (!success) {
-            log(`FATAL: Failed to encode track ${seg.trackNum} after all retries.`);
-            throw new Error(`Failed to encode track ${seg.trackNum}: ${lastError.message}`);
-        }
+            if (!success) {
+                log(`FATAL: Failed to encode track ${seg.trackNum} after all retries.`);
+                throw new Error(`Failed to encode track ${seg.trackNum}: ${lastError ? lastError.message : 'Unknown error'}`);
+            }
 
-        results.push({
-            trackNum: seg.trackNum,
-            trackName: seg.trackName,
-            fileName: seg.fileName,
-            filePath: seg.filePath,
-            start: seg.start,
-            end: seg.end,
-        });
+            results.push({
+                trackNum: seg.trackNum,
+                trackName: seg.trackName,
+                fileName: seg.fileName,
+                filePath: seg.filePath,
+                start: seg.start,
+                end: seg.end,
+            });
+        }
+    };
+
+    // Spawn identical workers up to the concurrency limit
+    const workers = [];
+    for (let i = 0; i < concurrency; i++) {
+        workers.push(worker());
     }
+
+    // Wait for all workers to complete
+    await Promise.all(workers);
+
+    // Sort results to maintain original track order since Promise.all resolves asynchronously
+    results.sort((a, b) => a.trackNum - b.trackNum);
 
     log(`Export process completed successfully.`);
     return { tracks: results, outputPath };

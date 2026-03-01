@@ -96,11 +96,6 @@ async function loadFile(filePath) {
         closeProject();
     }
 
-    // Re-initialize waveform if it was destroyed (after Close Project)
-    if (!getWavesurfer()) {
-        initWaveform();
-    }
-
     try {
         showLoading('Loading audio file...');
 
@@ -118,31 +113,31 @@ async function loadFile(filePath) {
         const wavPath = await window.api.decodeToWav(filePath);
         state.wavPath = wavPath;
 
+        // Show main content BEFORE initialising WaveSurfer so the canvas has non-zero dimensions
+        $dropZone.classList.add('hidden');
+        $mainContent.classList.remove('hidden');
+
+        // Re-initialize waveform now that container is visible
+        if (!getWavesurfer()) {
+            initWaveform();
+        }
+
         // Get waveform peaks from main process (avoids OOM in renderer)
         showLoading('Analyzing waveform...');
         try {
             const rmsData = await window.api.analyzeRMS(wavPath, 50);
 
             // Convert dB to linear [0..1] array for WaveSurfer
-            // WaveSurfer expects values between 0 and 1
             const peaks = rmsData.rmsDb.map(db => {
-                // Approximate linear amplitude from dB
                 const val = Math.pow(10, db / 20);
                 return Math.max(0, val);
             });
-
-            // Show main content, hide drop zone
-            $dropZone.classList.add('hidden');
-            $mainContent.classList.remove('hidden');
 
             // Load into waveform with pre-calculated peaks
             showLoading('Rendering waveform...');
             await loadAudio(wavPath, peaks);
         } catch (peaksErr) {
             console.warn('Peak analysis failed, falling back to default load:', peaksErr);
-            // Fallback to normal load (might crash on large files)
-            $dropZone.classList.add('hidden');
-            $mainContent.classList.remove('hidden');
             await loadAudio(wavPath);
         }
 
@@ -166,7 +161,17 @@ async function loadFile(filePath) {
     } catch (err) {
         hideLoading();
         console.error('Failed to load file:', err);
-        alert(`Failed to load file: ${err.message}`);
+
+        // Restore UI to a usable state so user can try again
+        state.filePath = null;
+        state.wavPath = null;
+        state.audioInfo = null;
+        $mainContent.classList.add('hidden');
+        $dropZone.classList.remove('hidden');
+        $btnCloseProject.style.display = 'none';
+        destroyWaveform();
+
+        showToast(`Failed to load file: ${err.message}`, 'error', 6000);
     }
 }
 

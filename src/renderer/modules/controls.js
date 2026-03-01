@@ -123,8 +123,8 @@ export function initControls(state) {
         });
     }
 
-    // ── Export UI Elements ──
     const $exportProgressOverlay = document.getElementById('exportProgressOverlay');
+    const $exportProgressContainer = document.getElementById('exportProgressContainer');
     const $exportProgressBar = document.getElementById('exportProgressBar');
     const $exportProgressText = document.getElementById('exportProgressText');
     const $exportETA = document.getElementById('exportETA');

@@ -218,11 +218,13 @@ window.clearMarkers = clearMarkers;
 window.updateMarkerCount = updateMarkerCount;
 
 // ── Set markers from detection ─────────────────────────────────
-function setMarkers(markerTimes, skipHistory = false) {
+function setMarkers(markerTimes, skipHistory = false, keepNames = false) {
     if (!skipHistory) pushHistory('Set Markers');
     state.markers = [...markerTimes].sort((a, b) => a - b);
-    state.trackNames = [];      // Wipe names and artists on bulk detect/import
-    state.trackArtists = [];
+    if (!keepNames) {
+        state.trackNames = [];      // Wipe names and artists on bulk detect/import
+        state.trackArtists = [];
+    }
     syncMarkersToRegions(); // Added visual sync
     updateTracklist(state);
     updateMarkerCount();

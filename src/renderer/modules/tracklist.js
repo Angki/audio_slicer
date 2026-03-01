@@ -225,7 +225,7 @@ export function applyDiscogsNames(tracklist) {
 
             if (newMarkers.length > 0) {
                 if (window.setMarkers) {
-                    window.setMarkers(newMarkers, true);
+                    window.setMarkers(newMarkers, true, true);
                 } else {
                     _state.markers = newMarkers;
                     if (window.syncMarkersToRegions) window.syncMarkersToRegions();

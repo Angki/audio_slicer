@@ -52,6 +52,8 @@ async function exportTracks(options, event = null) {
         coverArt = null,
         normalize = false,
         sampleRate = null,
+        discogsImages = [],
+        discogsToken = ''
     } = options;
 
     // Create output folder: outputDir/Artist/Album/
@@ -113,6 +115,46 @@ async function exportTracks(options, event = null) {
 
     const results = [];
     const meta = { format, artist, album, year, mp3Bitrate, albumArtist, genre, comment, coverArt, normalize, sampleRate };
+
+    // Download and upscale all Discogs gallery images sequentially
+    if (discogsImages && discogsImages.length > 0 && discogsToken) {
+        log(`Processing ${discogsImages.length} Discogs cover arts for export folder...`);
+        for (let i = 0; i < discogsImages.length; i++) {
+            try {
+                const imgUrl = discogsImages[i];
+                log(`Downloading Discogs gallery image ${i + 1}: ${imgUrl}`);
+
+                const response = await fetch(imgUrl, {
+                    headers: { 'Authorization': `Discogs token=${discogsToken}`, 'User-Agent': 'AutoSlice/0.1.0' }
+                });
+
+                if (!response.ok) {
+                    log(`Failed to download image ${i + 1}: HTTP ${response.status}`);
+                    continue;
+                }
+
+                const buffer = Buffer.from(await response.arrayBuffer());
+                const image = nativeImage.createFromBuffer(buffer);
+
+                if (!image.isEmpty()) {
+                    const size = image.getSize();
+                    let finalImage = image;
+                    if (size.width < 1500) {
+                        const ratio = 1500 / size.width;
+                        const newHeight = Math.round(size.height * ratio);
+                        finalImage = image.resize({ width: 1500, height: newHeight, quality: 'best' });
+                    }
+
+                    const fileName = `discogs_gallery_${i + 1}.jpg`;
+                    const coverDest = path.join(outputPath, fileName);
+                    fs.writeFileSync(coverDest, finalImage.toJPEG(90));
+                    log(`Downloaded and upscaled gallery image to: ${coverDest}`);
+                }
+            } catch (err) {
+                log(`Failed to process Discogs gallery image ${i + 1}: ${err.message}`);
+            }
+        }
+    }
 
     // Smart Cover Art Processing (Upscale to 1500px)
     if (meta.coverArt) {

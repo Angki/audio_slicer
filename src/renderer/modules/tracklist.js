@@ -188,8 +188,15 @@ export function applyDiscogsNames(tracklist) {
     if (!_state) return;
     _state.trackNames = tracklist.map(t => t.title);
 
+    const globalArtist = document.getElementById('exportArtist') ? document.getElementById('exportArtist').value : '';
+
     // Handle per-track artists from Discogs (compilations/splits)
-    _state.trackArtists = tracklist.map(t => t.artists || '');
+    _state.trackArtists = tracklist.map(t => {
+        if (t.artists && Array.isArray(t.artists)) {
+            return t.artists.map(a => a.name.replace(/\(\d+\)$/, '').trim()).join(', ');
+        }
+        return globalArtist;
+    });
 
     // Check if we can auto-generate markers based on durations
     const hasDurations = tracklist.every(t => t.durationSeconds > 0);

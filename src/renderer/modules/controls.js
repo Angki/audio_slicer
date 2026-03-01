@@ -196,7 +196,9 @@ export function initControls(state) {
 
             // Dictionary to hold dynamically created progress bar elements
             const progressBars = {};
-            completedTracks = 0;
+            let completedTracks = 0;
+            let exportTotalTracks = 0;
+            let exportStartTime = 0;
 
             // Listen to IPC for progress
             if (window.api.onExportInit) {
@@ -311,6 +313,8 @@ export function initControls(state) {
                 coverArt,
                 normalize,
                 sampleRate,
+                discogsImages: state.discogsImages || [],
+                discogsToken: state.discogsToken || ''
             });
 
             if (window.api.removeExportListeners) {

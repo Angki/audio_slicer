@@ -10,6 +10,7 @@ let wavesurfer = null;
 let regionsPlugin = null;
 let spectrogramPlugin = null;
 let spectrogramVisible = false;
+let isWaveformUIInitialized = false;
 
 // ── Exclude mode (E key toggle) ─────────────────────────────
 let excludeMode = false;
@@ -163,123 +164,138 @@ export function initWaveform() {
         isDragging = false;
     });
 
-    // ── Playback controls ──
-    document.getElementById('btnPlayPause').addEventListener('click', () => {
-        wavesurfer.playPause();
-    });
+    // ── Static DOM Event Listeners (Attach ONLY ONCE) ──
+    if (!isWaveformUIInitialized) {
+        // ── Playback controls ──
+        document.getElementById('btnPlayPause')?.addEventListener('click', () => {
+            if (wavesurfer && document.getElementById('btnPlayPause').disabled === false) {
+                wavesurfer.playPause();
+            }
+        });
 
-    document.getElementById('btnStop').addEventListener('click', () => {
-        wavesurfer.stop();
-    });
+        document.getElementById('btnStop')?.addEventListener('click', () => {
+            if (wavesurfer) wavesurfer.stop();
+        });
 
-    // ── Zoom controls ──
-    const $zoomSlider = document.getElementById('zoomSlider');
-    const $btnZoomIn = document.getElementById('btnZoomIn');
-    const $btnZoomOut = document.getElementById('btnZoomOut');
-    const $btnZoomFit = document.getElementById('btnZoomFit');
+        // ── Zoom controls ──
+        const $zoomSlider = document.getElementById('zoomSlider');
+        const $btnZoomIn = document.getElementById('btnZoomIn');
+        const $btnZoomOut = document.getElementById('btnZoomOut');
+        const $btnZoomFit = document.getElementById('btnZoomFit');
 
-    $zoomSlider.addEventListener('input', (e) => {
-        wavesurfer.zoom(Number(e.target.value));
-    });
+        $zoomSlider?.addEventListener('input', (e) => {
+            if (wavesurfer) wavesurfer.zoom(Number(e.target.value));
+        });
 
-    $btnZoomIn.addEventListener('click', () => {
-        const val = Math.min(Number($zoomSlider.value) + 20, 500);
-        $zoomSlider.value = val;
-        wavesurfer.zoom(val);
-    });
-
-    $btnZoomOut.addEventListener('click', () => {
-        const val = Math.max(Number($zoomSlider.value) - 20, 1);
-        $zoomSlider.value = val;
-        wavesurfer.zoom(val);
-    });
-
-    // Zoom Fit: scale waveform to fit entire audio in container
-    if ($btnZoomFit) {
-        $btnZoomFit.addEventListener('click', () => {
-            const containerWidth = document.getElementById('waveformContainer').clientWidth;
-            const duration = wavesurfer.getDuration();
-            if (!duration) return;
-            const pxPerSec = Math.floor(containerWidth / duration);
-            const val = Math.max(1, Math.min(pxPerSec, 500));
+        $btnZoomIn?.addEventListener('click', () => {
+            if (!wavesurfer) return;
+            const val = Math.min(Number($zoomSlider.value) + 20, 500);
             $zoomSlider.value = val;
             wavesurfer.zoom(val);
         });
-    }
 
-    // ── Ctrl+Scroll to zoom ──
-    document.getElementById('waveformContainer').addEventListener('wheel', (e) => {
-        if (!e.ctrlKey) return;
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -15 : 15;
-        const val = Math.max(1, Math.min(Number($zoomSlider.value) + delta, 500));
-        $zoomSlider.value = val;
-        wavesurfer.zoom(val);
-    }, { passive: false });
-
-    // ── Time tooltip on waveform hover ──
-    const $tooltip = document.getElementById('waveformTooltip');
-    const $waveformContainer = document.getElementById('waveformContainer');
-
-    if ($tooltip) {
-        $waveformContainer.addEventListener('mousemove', (e) => {
-            if (!wavesurfer || !wavesurfer.getDuration()) return;
-            const wrapper = wavesurfer.getWrapper();
-            const wrapperRect = wrapper.getBoundingClientRect();
-
-            // Calculate the absolute pixel offset accounting for the scroll container
-            const xOnWaveform = (e.clientX - wrapperRect.left) + wrapper.scrollLeft;
-
-            // Map pixel location dynamically against total scrollable width
-            const relX = Math.max(0, Math.min(1, xOnWaveform / wrapper.scrollWidth));
-
-            const time = relX * wavesurfer.getDuration();
-            $tooltip.textContent = window.formatTime(time);
-
-            // Visual offset restricted to the bounds of the outer scroll viewport
-            const containerRect = $waveformContainer.getBoundingClientRect();
-            $tooltip.style.left = `${e.clientX - containerRect.left + 15}px`;
-            $tooltip.style.opacity = '1';
+        $btnZoomOut?.addEventListener('click', () => {
+            if (!wavesurfer) return;
+            const val = Math.max(Number($zoomSlider.value) - 20, 1);
+            $zoomSlider.value = val;
+            wavesurfer.zoom(val);
         });
 
-        $waveformContainer.addEventListener('mouseleave', () => {
-            $tooltip.style.opacity = '0';
-        });
-    }
+        // Zoom Fit: scale waveform to fit entire audio in container
+        if ($btnZoomFit) {
+            $btnZoomFit.addEventListener('click', () => {
+                if (!wavesurfer) return;
+                const containerWidth = document.getElementById('waveformContainer').clientWidth;
+                const duration = wavesurfer.getDuration();
+                if (!duration) return;
+                const pxPerSec = Math.floor(containerWidth / duration);
+                const val = Math.max(1, Math.min(pxPerSec, 500));
+                $zoomSlider.value = val;
+                wavesurfer.zoom(val);
+            });
+        }
 
-    // ── Toggle Spectrogram ──
-    document.getElementById('btnToggleSpectrogram').addEventListener('click', () => {
-        const $spectContainer = document.getElementById('spectrogramContainer');
-        spectrogramVisible = !spectrogramVisible;
+        // ── Ctrl+Scroll to zoom ──
+        document.getElementById('waveformContainer')?.addEventListener('wheel', (e) => {
+            if (!e.ctrlKey || !wavesurfer) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -15 : 15;
+            const val = Math.max(1, Math.min(Number($zoomSlider.value) + delta, 500));
+            $zoomSlider.value = val;
+            wavesurfer.zoom(val);
+        }, { passive: false });
 
-        if (spectrogramVisible) {
-            const decodedData = wavesurfer.getDecodedData();
-            if (decodedData) {
-                $spectContainer.classList.remove('hidden');
-                if (!spectrogramPlugin) {
-                    try {
-                        spectrogramPlugin = wavesurfer.registerPlugin(
-                            SpectrogramPlugin.create({
-                                container: $spectContainer,
-                                labels: true,
-                                height: 100,
-                                splitChannels: false,
-                            })
-                        );
-                    } catch (e) {
-                        console.warn('Spectrogram init failed:', e);
+        // ── Time tooltip on waveform hover ──
+        const $tooltip = document.getElementById('waveformTooltip');
+        const $waveformContainer = document.getElementById('waveformContainer');
+
+        if ($tooltip && $waveformContainer) {
+            $waveformContainer.addEventListener('mousemove', (e) => {
+                if (!wavesurfer || !wavesurfer.getDuration()) return;
+                const wrapper = wavesurfer.getWrapper();
+                const wrapperRect = wrapper.getBoundingClientRect();
+
+                // Calculate the absolute pixel offset accounting for the scroll container
+                const xOnWaveform = (e.clientX - wrapperRect.left) + wrapper.scrollLeft;
+
+                // Map pixel location dynamically against total scrollable width
+                const relX = Math.max(0, Math.min(1, xOnWaveform / wrapper.scrollWidth));
+
+                const time = relX * wavesurfer.getDuration();
+                $tooltip.textContent = window.formatTime(time);
+
+                // Visual offset restricted to the bounds of the outer scroll viewport
+                const containerRect = $waveformContainer.getBoundingClientRect();
+                $tooltip.style.left = `${e.clientX - containerRect.left + 15}px`;
+                $tooltip.style.opacity = '1';
+            });
+
+            $waveformContainer.addEventListener('mouseleave', () => {
+                $tooltip.style.opacity = '0';
+            });
+        }
+
+        // ── Toggle Spectrogram ──
+        document.getElementById('btnToggleSpectrogram')?.addEventListener('click', () => {
+            if (!wavesurfer) return;
+            const $spectContainer = document.getElementById('spectrogramContainer');
+            spectrogramVisible = !spectrogramVisible;
+
+            if (spectrogramVisible) {
+                const decodedData = wavesurfer.getDecodedData();
+                if (decodedData) {
+                    $spectContainer.classList.remove('hidden');
+                    if (!spectrogramPlugin) {
+                        try {
+                            spectrogramPlugin = wavesurfer.registerPlugin(
+                                SpectrogramPlugin.create({
+                                    container: $spectContainer,
+                                    labels: true,
+                                    height: 100,
+                                    splitChannels: false,
+                                })
+                            );
+                        } catch (e) {
+                            console.warn('Spectrogram init failed:', e);
+                        }
                     }
+                } else {
+                    alert('Spectrogram is disabled for large files (streaming mode) to improve performance.');
+                    spectrogramVisible = false;
                 }
             } else {
-                alert('Spectrogram is disabled for large files (streaming mode) to improve performance.');
-                spectrogramVisible = false;
+                $spectContainer.classList.add('hidden');
             }
-        } else {
-            $spectContainer.classList.add('hidden');
-        }
-    });
+        });
+
+        // ── E key to toggle exclude mode ──
+        document.addEventListener('keydown', _handleKeydown);
+
+        isWaveformUIInitialized = true;
+    }
 
     // ── Double click handlers ──
+    // This MUST run every time a new waveurfer instance is created
     wavesurfer.on('dblclick', (relativeX) => {
         const time = relativeX * wavesurfer.getDuration();
 
@@ -304,9 +320,6 @@ export function initWaveform() {
             syncMarkersToRegions();
         }
     });
-
-    // ── E key to toggle exclude mode ──
-    document.addEventListener('keydown', _handleKeydown);
 }
 
 // ── Keydown handler (defined separately for cleaner re-use) ──
@@ -593,9 +606,26 @@ export function destroyWaveform() {
         wavesurfer.destroy();
         wavesurfer = null;
     }
+
+    // Explicitly clear DOM containers so subsequent instances don't duplicate/break
+    const wc = document.getElementById('waveformContainer');
+    if (wc) wc.innerHTML = '<div id="waveformTooltip" class="waveform-tooltip"></div><div id="excludeModeBadge" class="exclude-mode-badge" style="display:none"></div>';
+
+    const mc = document.getElementById('minimapContainer');
+    if (mc) mc.innerHTML = '';
+
+    const sc = document.getElementById('spectrogramContainer');
+    if (sc) sc.innerHTML = '';
+
+    const media = document.querySelector('audio#waveformAudio');
+    if (media) {
+        media.pause();
+        media.removeAttribute('src');
+        media.load();
+    }
+
     regionsPlugin = null;
     spectrogramPlugin = null;
     spectrogramVisible = false;
     excludeMode = false;
-    document.removeEventListener('keydown', _handleKeydown);
 }

@@ -117,16 +117,19 @@ async function exportTracks(options, event = null) {
     const meta = { format, artist, album, year, mp3Bitrate, albumArtist, genre, comment, coverArt, normalize, sampleRate };
 
     // Download and upscale all Discogs gallery images sequentially
-    if (discogsImages && discogsImages.length > 0 && discogsToken) {
+    if (discogsImages && discogsImages.length > 0) {
         log(`Processing ${discogsImages.length} Discogs cover arts for export folder...`);
         for (let i = 0; i < discogsImages.length; i++) {
             try {
                 const imgUrl = discogsImages[i];
                 log(`Downloading Discogs gallery image ${i + 1}: ${imgUrl}`);
 
-                const response = await fetch(imgUrl, {
-                    headers: { 'Authorization': `Discogs token=${discogsToken}`, 'User-Agent': 'AutoSlice/0.1.0' }
-                });
+                const headers = { 'User-Agent': 'AutoSlice/0.1.0' };
+                if (discogsToken) {
+                    headers['Authorization'] = `Discogs token=${discogsToken}`;
+                }
+
+                const response = await fetch(imgUrl, { headers });
 
                 if (!response.ok) {
                     log(`Failed to download image ${i + 1}: HTTP ${response.status}`);

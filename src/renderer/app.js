@@ -162,15 +162,25 @@ async function loadFile(filePath) {
         hideLoading();
         console.error('Failed to load file:', err);
 
-        // Restore UI to a usable state so user can try again
+        // Only go back to drop zone if we didn't have a previous project to show
+        const hadPreviousProject = !$mainContent.classList.contains('hidden');
         state.filePath = null;
         state.wavPath = null;
         state.audioInfo = null;
-        $mainContent.classList.add('hidden');
-        $dropZone.classList.remove('hidden');
-        $btnCloseProject.style.display = 'none';
+        if (!hadPreviousProject) {
+            // No previous content — just show drop zone
+            $mainContent.classList.add('hidden');
+            $dropZone.classList.remove('hidden');
+            $btnCloseProject.style.display = 'none';
+        } else {
+            // We were showing main content — go back to drop zone cleanly
+            $mainContent.classList.add('hidden');
+            $dropZone.classList.remove('hidden');
+            $btnCloseProject.style.display = 'none';
+            $fileNameDisplay.textContent = 'No file loaded';
+            $fileInfoDisplay.textContent = '';
+        }
         destroyWaveform();
-
         showToast(`Failed to load file: ${err.message}`, 'error', 6000);
     } finally {
         state.isProcessing = false;
@@ -239,6 +249,12 @@ function setMarkers(markerTimes, skipHistory = false, keepNames = false) {
 
 window.setMarkers = setMarkers;
 
+// Helper to check if a DataTransfer drop is a folder
+function _isDroppedItemFolder(dataTransferItem) {
+    const entry = dataTransferItem?.webkitGetAsEntry?.();
+    return entry && entry.isDirectory;
+}
+
 // ── Drag & Drop ────────────────────────────────────────────────
 document.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -267,10 +283,13 @@ $dropZone.addEventListener('dragover', (e) => {
 $dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     $dropZone.classList.remove('drag-over');
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        loadFile(files[0].path);
+    const item = e.dataTransfer.items?.[0];
+    if (_isDroppedItemFolder(item)) {
+        showToast('Cannot load a folder — please drop a single audio file.', 'error');
+        return;
     }
+    const files = e.dataTransfer.files;
+    if (files.length > 0) loadFile(files[0].path);
 });
 
 // Also allow drop on main content area for reloading
@@ -280,10 +299,13 @@ $mainContent.addEventListener('dragover', (e) => {
 
 $mainContent.addEventListener('drop', (e) => {
     e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        loadFile(files[0].path);
+    const item = e.dataTransfer.items?.[0];
+    if (_isDroppedItemFolder(item)) {
+        showToast('Cannot load a folder — please drop a single audio file.', 'error');
+        return;
     }
+    const files = e.dataTransfer.files;
+    if (files.length > 0) loadFile(files[0].path);
 });
 
 // ── Open File button ───────────────────────────────────────────

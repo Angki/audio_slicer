@@ -24,6 +24,7 @@ export async function initSettings() {
     const $btnClearDefaultOutputDir = document.getElementById('btnClearDefaultOutputDir');
     const $settingWaveformTheme = document.getElementById('settingWaveformTheme');
     const $settingUITheme = document.getElementById('settingUITheme');
+    const $settingMinTrackDuration = document.getElementById('settingMinTrackDuration');
     const $btnApplySettings = document.getElementById('btnApplySettings');
 
     // Load initial settings
@@ -32,6 +33,9 @@ export async function initSettings() {
         $settingDefaultOutputDir.value = await window.api.storeGet('defaultOutputDir', '');
         $settingWaveformTheme.value = await window.api.storeGet('waveformTheme', 'purple');
         $settingUITheme.value = await window.api.storeGet('uiTheme', 'dark');
+        
+        const minDurationSelect = await window.api.storeGet('settingMinTrackDuration', '30000');
+        if ($settingMinTrackDuration) $settingMinTrackDuration.value = minDurationSelect;
 
         // Apply the settings to export bar if possible
         const $exportFormat = document.getElementById('exportFormat');
@@ -79,6 +83,9 @@ export async function initSettings() {
             await window.api.storeSet('defaultOutputDir', $settingDefaultOutputDir.value);
             await window.api.storeSet('waveformTheme', $settingWaveformTheme.value);
             await window.api.storeSet('uiTheme', $settingUITheme.value);
+            if ($settingMinTrackDuration) {
+                await window.api.storeSet('settingMinTrackDuration', $settingMinTrackDuration.value);
+            }
 
             // Sync to export bar
             const $exportFormat = document.getElementById('exportFormat');

@@ -90,6 +90,9 @@ window.showToast = showToast;
 // ── File Loading ───────────────────────────────────────────────
 async function loadFile(filePath) {
     if (state.isProcessing) return;
+    
+    // Capture UI presence BEFORE we modify it
+    const hadPreviousProject = !$mainContent.classList.contains('hidden');
     state.isProcessing = true;
 
     try {
@@ -163,7 +166,6 @@ async function loadFile(filePath) {
         console.error('Failed to load file:', err);
 
         // Only go back to drop zone if we didn't have a previous project to show
-        const hadPreviousProject = !$mainContent.classList.contains('hidden');
         state.filePath = null;
         state.wavPath = null;
         state.audioInfo = null;

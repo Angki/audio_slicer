@@ -226,12 +226,12 @@ export function initWaveform() {
         }, { passive: false });
 
         // ── Time tooltip on waveform hover ──
-        const $tooltip = document.getElementById('waveformTooltip');
         const $waveformContainer = document.getElementById('waveformContainer');
 
-        if ($tooltip && $waveformContainer) {
+        if ($waveformContainer) {
             $waveformContainer.addEventListener('mousemove', (e) => {
-                if (!wavesurfer || !wavesurfer.getDuration()) return;
+                const $tooltip = document.getElementById('waveformTooltip');
+                if (!wavesurfer || !wavesurfer.getDuration() || !$tooltip) return;
                 const wrapper = wavesurfer.getWrapper();
                 const wrapperRect = wrapper.getBoundingClientRect();
 
@@ -251,7 +251,8 @@ export function initWaveform() {
             });
 
             $waveformContainer.addEventListener('mouseleave', () => {
-                $tooltip.style.opacity = '0';
+                const $tooltip = document.getElementById('waveformTooltip');
+                if ($tooltip) $tooltip.style.opacity = '0';
             });
         }
 
@@ -621,7 +622,8 @@ export function destroyWaveform() {
     if (media) {
         media.pause();
         media.removeAttribute('src');
-        media.load();
+        media.load(); // Force release of OS file locks
+        media.remove(); // Remove completely from the DOM to avoid poisoned instances
     }
 
     regionsPlugin = null;

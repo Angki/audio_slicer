@@ -181,6 +181,60 @@ async function exportTracks(options, event = null) {
         } catch (err) {
             log(`Failed to process cover art upscaler: ${err.message}`);
         }
+    } else {
+        // Fallback: If it's a video file, extract a frame
+        const videoExts = ['.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv'];
+        const inputExt = path.extname(inputFile).toLowerCase();
+        if (videoExts.includes(inputExt)) {
+            try {
+                log(`Input is a video without cover art. Attempting to extract a frame from 50% timestamp...`);
+                const frameName = 'extracted_cover.jpg';
+                const frameDest = path.join(outputPath, frameName);
+                
+                await new Promise((resolveExt, rejectExt) => {
+                    ffmpeg(inputFile)
+                        .screenshots({
+                            timestamps: ['50%'],
+                            filename: frameName,
+                            folder: outputPath,
+                        })
+                        .on('end', resolveExt)
+                        .on('error', rejectExt);
+                });
+
+                if (fs.existsSync(frameDest)) {
+                    // Upscale and square crop the extracted frame
+                    const image = nativeImage.createFromPath(frameDest);
+                    if (!image.isEmpty()) {
+                        const size = image.getSize();
+                        let finalImage = image;
+                        
+                        // We want at least 1500x1500
+                        const targetSize = 1500;
+                        const ratio = Math.max(targetSize / size.width, targetSize / size.height);
+                        const newWidth = Math.round(size.width * ratio);
+                        const newHeight = Math.round(size.height * ratio);
+                        
+                        finalImage = image.resize({ width: newWidth, height: newHeight, quality: 'best' });
+                        
+                        // Center crop to square
+                        const cropRect = {
+                            x: Math.max(0, Math.floor((newWidth - targetSize) / 2)),
+                            y: Math.max(0, Math.floor((newHeight - targetSize) / 2)),
+                            width: targetSize,
+                            height: targetSize
+                        };
+                        finalImage = finalImage.crop(cropRect);
+                        
+                        fs.writeFileSync(frameDest, finalImage.toJPEG(90));
+                        meta.coverArt = frameDest;
+                        log(`Video frame successfully extracted, upscaled, squared, and saved to: ${frameDest}`);
+                    }
+                }
+            } catch (err) {
+                log(`Video frame extraction failed: ${err.message}. Assuming audio-only or unsupported video format.`);
+            }
+        }
     }
 
     if (event) {
@@ -425,6 +479,15 @@ function exportSegment(inputFile, segment, meta, event) {
                 }
             })
             .on('end', () => {
+                if (event) {
+                    // Send guaranteed 100% progress event when ffmpeg finishes cleanly
+                    event.sender.send('export:progress', {
+                        type: 'encode_progress',
+                        percent: 100,
+                        trackNum: segment.trackNum
+                    });
+                }
+                
                 // node-id3 failsafe for MP3
                 if (format === 'mp3') {
                     try {

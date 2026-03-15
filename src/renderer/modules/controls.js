@@ -38,11 +38,9 @@ export function initControls(state) {
         try {
             window.showLoading('Analyzing audio for silence gaps...');
 
-            const minTrackDuration = await window.api.storeGet('settingMinTrackDuration', '30000');
             const params = {
                 thresholdDb: Number($threshold.value),
                 minDurationMs: Number($minSilence.value),
-                minTrackDurationMs: Number(minTrackDuration),
                 sensitivity: Number($sensitivity.value) / 100,
                 autoThreshold: $autoThreshold.checked,
             };

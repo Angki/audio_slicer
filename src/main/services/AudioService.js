@@ -145,7 +145,6 @@ async function detectGaps(filePath, params = {}) {
     const {
         thresholdDb = -40,
         minDurationMs = 1500,
-        minTrackDurationMs = 30000, // 30 seconds minimum per track
         sensitivity = 0.5,
         autoThreshold = true,
         windowMs = 50,
@@ -221,52 +220,9 @@ async function detectGaps(filePath, params = {}) {
     // Filter out markers too close to start/end (within 5 seconds)
     const audioInfo = await getAudioInfo(filePath);
     const totalDuration = audioInfo.duration;
-    let filteredMarkers = markers.filter(
+    const filteredMarkers = markers.filter(
         m => m.time > 5 && m.time < totalDuration - 5
     );
-
-    // Filter 2: Minimum Track Duration Filter
-    // Resolves phantom 1-5s tracks caused by volume dips during crossfades
-    const robustMarkers = [];
-    let lastMarkerTime = 0; // 0 represents the start of the audio
-
-    for (const marker of filteredMarkers) {
-        if (marker.time - lastMarkerTime >= (minTrackDurationMs / 1000)) {
-            robustMarkers.push(marker);
-            lastMarkerTime = marker.time;
-        }
-    }
-    filteredMarkers = robustMarkers;
-
-    // Filter 3: Zero-Crossing Snap
-    // Prevent clicking noises by shifting markers to the nearest zero amplitude crossing
-    const MAX_SHIFT_SEC = 0.1; // Search up to 100ms
-    for (const marker of filteredMarkers) {
-        const centerSample = Math.floor(marker.time * sampleRate);
-        const searchRadius = Math.floor(MAX_SHIFT_SEC * sampleRate);
-        
-        const startSearch = Math.max(0, centerSample - searchRadius);
-        const endSearch = Math.min(samples.length - 1, centerSample + searchRadius);
-        
-        let nearestZeroPoint = centerSample;
-        let minDistance = Number.MAX_VALUE;
-
-        // Search outward for a zero-crossing
-        for (let i = startSearch; i < endSearch; i++) {
-            // A zero-crossing happens when signs differ between consecutive samples
-            if ((samples[i] >= 0 && samples[i+1] < 0) || (samples[i] < 0 && samples[i+1] >= 0)) {
-                // Determine exact interpolation distance from ideal marker center
-                const dist = Math.abs(i - centerSample);
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    nearestZeroPoint = i;
-                }
-            }
-        }
-        
-        // Snap the marker time to the nearest 0 point found
-        marker.time = nearestZeroPoint / sampleRate;
-    }
 
     // Fallback: if no gaps found, try progressively higher thresholds
     if (filteredMarkers.length === 0 && effectiveThreshold < -25) {

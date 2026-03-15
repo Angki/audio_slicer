@@ -6,7 +6,7 @@
 import { initWaveform, loadAudio, getWavesurfer, destroyWaveform, syncMarkersToRegions } from './modules/waveform.js';
 import { initControls } from './modules/controls.js';
 import { initTracklist, updateTracklist } from './modules/tracklist.js';
-import { initDiscogs } from './modules/discogs-ui.js';
+import { initDiscogs, clearDiscogs } from './modules/discogs-ui.js';
 import { initSmartImport } from './modules/smart-import.js';
 import { initHistory, pushHistory, clearHistory } from './modules/history.js';
 import { initSettings } from './modules/settings.js';
@@ -342,6 +342,9 @@ function closeProject() {
     // Destroy waveform (will be re-initialized lazily on next loadFile)
     destroyWaveform();
 
+    // Clear Discogs search state and DOM
+    clearDiscogs();
+
     // Clear tracklist and history
     updateTracklist(state);
     clearHistory();
@@ -358,6 +361,18 @@ document.addEventListener('DOMContentLoaded', () => {
     initDiscogs(state);
     initSmartImport(state);
     initHistory(state);
+
+    // ── Sidebar toggle ──
+    const $sidebar = document.getElementById('sidebar');
+    const $btnToggleSidebar = document.getElementById('btnToggleSidebar');
+    const $btnCollapseSidebar = document.getElementById('btnCollapseSidebar');
+
+    function toggleSidebar() {
+        if ($sidebar) $sidebar.classList.toggle('collapsed');
+    }
+
+    $btnToggleSidebar?.addEventListener('click', toggleSidebar);
+    $btnCollapseSidebar?.addEventListener('click', toggleSidebar);
 });
 
 // ── Global Keyboard Shortcuts ─────────────────────────────────

@@ -472,14 +472,67 @@ input[type="range"]::-webkit-slider-thumb:hover {
   color: var(--text-muted);
 }
 
-/* ── Main Content ──────────────────────────────────────────── */
+/* ── Main Content ───────────────────────────────────────── */
 .main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+/* ── Main Body (left column) ───────────────────────────── */
+.main-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   gap: 1px;
   background: var(--border);
+  min-width: 0;
+}
+
+/* ── Sidebar (right column) ────────────────────────────── */
+.sidebar {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 200ms ease, min-width 200ms ease, max-width 200ms ease, opacity 200ms ease;
+}
+
+.sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  opacity: 0;
+  border-left: none;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar .discogs-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.sidebar .discogs-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 /* ── Panels ────────────────────────────────────────────────── */
@@ -623,7 +676,30 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-weight: 500;
 }
 
-/* ── Controls Row ──────────────────────────────────────────── */
+/* ── Marker Toolbar ──────────────────────────────────── */
+.marker-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.marker-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.marker-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Controls Row ─────────────────────────────────────── */
 .controls-row {
   display: flex;
   gap: 1px;
@@ -643,16 +719,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
   margin-bottom: 8px;
 }
 
-.playback-controls {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-}
-
 .detection-controls {
-  flex: 2;
+  flex: 1;
 }
 
 .param-grid {
@@ -694,10 +762,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   margin-top: 10px;
 }
 
-.marker-controls {
-  flex: 0 0 200px;
-}
-
 .marker-actions {
   display: flex;
   gap: 6px;
@@ -719,8 +783,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
   overflow: hidden;
 }
 
+/* ── Track List Panel ────────────────────────────────── */
 .track-list-panel {
-  flex: 3;
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;

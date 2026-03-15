@@ -52,7 +52,7 @@ export function initDiscogs(state) {
             $results.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
         } finally {
             $btnSearch.disabled = false;
-            $btnSearch.textContent = 'Search';
+            $btnSearch.textContent = '🔍 Search Discogs';
         }
     });
 
@@ -62,6 +62,30 @@ export function initDiscogs(state) {
             if (e.key === 'Enter') $btnSearch.click();
         });
     });
+}
+
+/**
+ * Clear all Discogs search state and DOM.
+ * Called when the project is closed.
+ */
+export function clearDiscogs() {
+    const $artist = document.getElementById('discogsArtist');
+    const $album = document.getElementById('discogsAlbum');
+    const $results = document.getElementById('discogsResults');
+    const $tracklist = document.getElementById('discogsTracklist');
+
+    if ($artist) $artist.value = '';
+    if ($album) $album.value = '';
+    if ($results) $results.innerHTML = '';
+    if ($tracklist) {
+        $tracklist.innerHTML = '';
+        $tracklist.classList.add('hidden');
+    }
+
+    // Clear discogs state
+    if (_state) {
+        _state.discogsInfo = null;
+    }
 }
 
 function renderResults(results, token) {
